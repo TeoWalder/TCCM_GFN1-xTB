@@ -1,4 +1,4 @@
-module chem_module
+module module_chem
 
   implicit none
 
@@ -58,4 +58,4 @@ contains
 
   end subroutine repulsion_energy
 
-end module chem_module
+end module module_chem
