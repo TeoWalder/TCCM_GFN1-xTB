@@ -4,8 +4,8 @@
 
 program xTB
 
-  use chem_module
-  use utilities_module
+  use module_chem
+  use module_utils
   implicit none
 
 ! PARAMETERS  
