@@ -1,4 +1,4 @@
-module utilities_module
+module module_utils
 
   implicit none
 
@@ -82,4 +82,4 @@ contains
 
   end subroutine E_conversion
 
-end module utilities_module
+end module module_utils
