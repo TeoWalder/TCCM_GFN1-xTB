@@ -1,125 +1,95 @@
-!-------------------------------------------------------!
-!---------- TIGHT BINDING SEMI-EMPIRICAL DFT -----------!
-!-------------------------------------------------------!
+program GFN1_xTB
 
-program xTB
-
-  use module_chem
-  use module_utils
   implicit none
 
 ! PARAMETERS  
-  integer                :: natoms
   real(8)                :: ang_bohr, ev_hartree, kf
   real(8)                :: alpha(4), Zeff(4)
-  character, allocatable :: symbol(:)
 ! PHYSICAL VARIABLES
-  integer, allocatable  :: atype(:)
-  real(8)               :: Erep, Edisp, E0, E1, E2, E3, Etot
-  real(8), allocatable  :: pos(:,:), dist(:,:)
+  integer                :: nat, nel
+  integer                :: nbasis, nshell, nocc
+  integer  , allocatable :: atype(:)
+  integer  , allocatable :: shell(:,:)
+  character, allocatable :: symbol(:)
+  real(8)                :: Erep, E0, E1, E2, E3, Etot
+  real(8)  , allocatable :: H0(:,:), S(:,:)
+  real(8)  , allocatable :: pos(:,:), dist(:,:)
+  real(8)  , allocatable :: eta(:)
 ! TECHNICAL VARIABLES
-  integer       :: i, j, ios
-  character(30) :: filename
+  integer :: i
 
-!------------------------------------------------------------------------------!
+!---------- HELLO WORLD -------------------------------------------------------!
+
+  write(*,*) ' ______________________________________ '
+  write(*,*) '~                                      ~' 
+  write(*,*) '~      Online Programming Project      ~'
+  write(*,*) '~      GFN1-xTB Semiempirical DFT      ~'
+  write(*,*) '~______________________________________~'
+  write(*,*)
 
 !---------- INITIALIZATION ----------------------------------------------------!
   
-  ! Reading parameters.dat
-  call parameters(ang_bohr, ev_hartree, kf, alpha, Zeff)
+  ! Read parameters.dat
+  call read_parameters(ang_bohr, ev_hartree, kf, alpha, Zeff)
 
-  ! Reading input file
-  open(10, file='input', status='old', iostat=ios)
-
-    if (ios.ne.0) then
-      write(*,*) '*** ERROR opening the input file'
-      stop
-    end if
-    read(10,*)
-    read(10,*) filename
-
-  close(10)
-
-  ! Reading xyz file
-  open(11, file=filename, status='old', iostat=ios)
-
-    if (ios.ne.0) then
-      write(*,*) '*** ERROR opening', filename
-      stop
-    end if
-    read(11,*) natoms
-    read(11,*)
-
-  allocate(pos(natoms,3), symbol(natoms), dist(natoms,natoms), atype(natoms))
-
-    do i = 1,natoms
-      read(11,*) symbol(i), pos(i,:)
-    end do
-
-  close(11)
-
-  do i = 1,natoms
-    if (symbol(i).eq.'H') then 
-      atype(i) = 1
-    else if (symbol(i).eq.'C') then
-      atype(i) = 2
-    else if (symbol(i).eq.'N') then
-      atype(i) = 3
-    else if (symbol(i).eq.'O') then
-      atype(i) = 4
-    else
-      stop '*** ERROR: wrong atom type in xyz file'
-    end if
+  do i = 1,5
+    read(5,*)
   end do
+ 
+  ! Number of atoms
+  read(5,*) nat
 
-  write(*,*) 'Molecule:      ', filename
-  write(*,*)
-  write(*,*) 'Positions (Angstrom):'
-  do i = 1,natoms
-    write(*,'(3f10.3)') pos(i,:)
-  end do
-  write(*,*)
+  allocate(pos(nat,3),symbol(nat),dist(nat,nat),atype(nat))
 
-  ! Convert Angstrom to a.u.
-  pos(:,:) = pos(:,:)/ang_bohr
+  read(5,*)
+  read(5,*)
 
-  write(*,*) 'Positions (bohr):'
-  do i = 1,natoms
-    write(*,'(3f10.3)') pos(i,:)
-  end do
-  write(*,*)
+  ! Read Coordinates
+  call read_coordinates(nat,ang_bohr,atype,pos,symbol)
 
-!---------- COMPUTE DISTANCES -------------------------------------------------!
+  ! Number of shells and basis functions
+  read(5,*) nshell, nbasis
+  read(5,*)
 
-  call distance(natoms, pos, dist)
+  allocate(H0(nbasis,nbasis),S(nbasis,nbasis),shell(nshell,4),eta(nshell))
 
-  write(*,*) 'Distances (bohr):'
-  write(*,'(2x,25i10)') (i, i=1,natoms)
-  do i = 1,natoms
-    write(*,'(i2,25f10.6)') i, dist(1:i,i)
-  end do
-  write(*,*)
+  ! Number of electrons and occupied orbitals
+  read(5,*) nel, nocc
+
+  read(5,*)
+  read(5,*)
+  read(5,*) 
+
+  ! Basis Set, Electronegativity, H0 & S
+  call read_basis(nshell,nbasis,H0,S,eta,shell)
+
+  ! Compute Distances
+  call distances(nat,pos,dist)
 
 !---------- ZEROTH ORDER ENERGY -----------------------------------------------!
 
-  call repulsion_energy(natoms, atype, dist, Zeff, alpha, kf, Erep)
-!  call dispersion_energy()
+  call repulsion_energy(nat,atype,dist,Zeff,alpha,kf,Erep)
 
-  E0 = Erep !+ Edisp
+  E0 = Erep
 
-  write(*,*) '0th ORDER ENERGY'
-  write(*,'(a25,f15.10)') 'Repulsion Energy:        ', Erep
-!  write(*,'(a25,f15.10)') 'Dispersion Energy:       ', Edisp
-  write(*,'(a25,f15.10)') 'Total 0th Order Energy:  ', E0
+  write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
+  write(*,'(x,a25)')        '0th ORDER ENERGY         '
+  write(*,*)
+  write(*,'(x,a25,f15.10,2x,a7)') 'Repulsion Energy:        ', Erep, 'Hartree'
+  write(*,'(x,a25,f15.10,2x,a7)') 'Total 0th Order Energy:  ', E0  , 'Hartree'
 
 !---------- FIRST ORDER ENERGY ------------------------------------------------!
 
-  
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
+ 
 
 !---------- END PROGRAM -------------------------------------------------------!
 
   deallocate(pos,symbol,dist,atype)
+  deallocate(shell,eta)
+  deallocate(H0,S)
   stop
 
-end program xTB
+end program GFN1_xTB
