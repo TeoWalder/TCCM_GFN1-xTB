@@ -6,7 +6,7 @@ subroutine distances(n,pos,dist)
   real(8), intent(in)  :: pos(n,3)
   real(8), intent(out) :: dist(n,n)
 
-  integer :: i, j
+  integer :: i, j, cnt
 
   ! Compute euclidean distance sqrt(x^2 + y^2 + z^2)
   dist = 0.d0
@@ -18,15 +18,6 @@ subroutine distances(n,pos,dist)
                         (pos(i,3) - pos(j,3))*(pos(i,3) - pos(j,3)))
     end do
   end do
-
-  ! Write distances
-  write(*,*) 'Distances (Bohr):'
-  write(*,*)
-  write(*,'(2x,25i10)') (i, i=1,n)
-  do i = 1,n
-    write(*,'(i2,25f10.6)') i, dist(1:i,i)
-  end do
-  write(*,*)
 
   return
 
