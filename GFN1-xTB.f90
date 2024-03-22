@@ -3,8 +3,8 @@ program GFN1_xTB
   implicit none
 
 ! PARAMETERS  
-  real(8)                :: ang_bohr, ev_hartree, kf
-  real(8)                :: alpha(4), Zeff(4)
+  real(8) :: ang_bohr, ev_hartree, kf
+  real(8) :: alpha(4), Zeff(4)
 ! PHYSICAL VARIABLES
   integer                :: nat, nel
   integer                :: nbasis, nshell, nocc
