@@ -1,0 +1,74 @@
+ ******************************************
+ ** Detailed input for the GFN1-xTB code **
+ ******************************************
+
+Number of atoms:
+   2
+
+Coordinates of the atoms in Angstrom:
+   C       0.000000     0.000000     0.000000
+   O       0.000000     0.000000     1.150000
+Properties of the basis set: (section 4.8)
+  Total number of shells and basis functions:
+     4     8
+  Number of electrons and occupied orbitals: 
+    10     5
+  List of shells and properties:
+  Sh. num., atom it is on, atom label, shell type, n0, first basis function, hardness eta_A^l:
+      For an s or sprime shell, there is one basis function - for p shells, three.
+     1     1  C       1     2     1    0.479988
+     2     1  C       3     2     2    0.457372
+     3     2  O       1     2     5    0.583349
+     4     2  O       3     4     6    0.605202
+
+Overlap Matrix elements <mu|nu> (eq. 41):
+  Basis function mu=   1 with other basis functions.
+   1.000000000   0.000000000   0.000000000   0.000000000   0.347842922   0.000000000   0.000000000  
+  -0.371968245
+  Basis function mu=   2 with other basis functions.
+   0.000000000   1.000000000   0.000000000   0.000000000   0.000000000   0.238874460   0.000000000
+   0.000000000
+  Basis function mu=   3 with other basis functions.
+   0.000000000   0.000000000   1.000000000   0.000000000   0.000000000   0.000000000   0.238874460
+   0.000000000
+  Basis function mu=   4 with other basis functions.
+   0.000000000   0.000000000   0.000000000   1.000000000   0.437354167   0.000000000   0.000000000
+  -0.324846061
+  Basis function mu=   5 with other basis functions.
+   0.347842922   0.000000000   0.000000000   0.437354167   1.000000000   0.000000000   0.000000000
+   0.000000000
+  Basis function mu=   6 with other basis functions.
+   0.000000000   0.238874460   0.000000000   0.000000000   0.000000000   1.000000000   0.000000000
+   0.000000000
+  Basis function mu=   7 with other basis functions.
+   0.000000000   0.000000000   0.238874460   0.000000000   0.000000000   0.000000000   1.000000000
+   0.000000000
+  Basis function mu=   8 with other basis functions.
+  -0.371968245   0.000000000   0.000000000  -0.324846061   0.000000000   0.000000000   0.000000000
+   1.000000000
+
+Zeroth-order Hamiltonian H0: elements <mu|H0|nu> (eqs. 24 - 27)
+  Basis function mu =    1 with other basis functions.
+  -0.502316501  -0.000000000  -0.000000000  -0.000000000  -0.358212570  -0.000000000  -0.000000000
+   0.399788711
+  Basis function mu =    2 with other basis functions.
+  -0.000000000  -0.368324827   0.000000000   0.000000000  -0.000000000  -0.264427626  -0.000000000
+  -0.000000000
+  Basis function mu =    3 with other basis functions.
+  -0.000000000   0.000000000  -0.368324827   0.000000000  -0.000000000  -0.000000000  -0.264427626
+  -0.000000000
+  Basis function mu =    4 with other basis functions.
+  -0.000000000   0.000000000   0.000000000  -0.368324827  -0.491820872  -0.000000000  -0.000000000
+   0.359595884
+  Basis function mu =    5 with other basis functions.
+  -0.358212570  -0.000000000  -0.000000000  -0.491820872  -0.865033393  -0.000000000  -0.000000000
+  -0.000000000
+  Basis function mu =    6 with other basis functions.
+  -0.000000000  -0.264427626  -0.000000000  -0.000000000  -0.000000000  -0.655346942   0.000000000
+   0.000000000
+  Basis function mu =    7 with other basis functions.
+  -0.000000000  -0.000000000  -0.264427626  -0.000000000  -0.000000000   0.000000000  -0.655346942
+   0.000000000
+  Basis function mu =    8 with other basis functions.
+   0.399788711  -0.000000000  -0.000000000   0.359595884  -0.000000000   0.000000000   0.000000000
+  -0.655346942
