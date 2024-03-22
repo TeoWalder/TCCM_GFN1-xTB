@@ -44,8 +44,23 @@ program GFN1_xTB
   read(5,*)
   read(5,*)
 
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
+  write(*,'(a74)') '                          MOLECULAR STRUCTURE                              '
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
   ! Read Coordinates
   call read_coordinates(nat,ang_bohr,atype,pos,symbol)
+
+  ! Compute Distances
+  call distances(nat,pos,dist)
+
+  ! Print Distances
+  write(*,*) 'Distances (Bohr):'
+  write(*,*)
+  call print_matrix(nat,dist)
+
+!---------- BASIS SET ---------------------------------------------------------!
 
   ! Read number of shells and basis functions
   read(5,*) nshell, nbasis
@@ -63,16 +78,15 @@ program GFN1_xTB
   ! Basis Set, Electronegativity, H0 & S
   call read_basis(nshell,nbasis,H0,S,eta,shell)
 
-  ! Compute Distances
-  call distances(nat,pos,dist)
-
-  ! Print Distances
-  write(*,*) 'Distances (Bohr):'
+  ! Print Basis Set
+  write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  call print_matrix(nat,dist)
+  write(*,'(a74)') '                              BASIS SET                                    '
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
+  write(*,*) 
 
-
-!---------- ZEROTH ORDER ENERGY -----------------------------------------------!
+!---------- ZEROth ORDER ENERGY -----------------------------------------------!
 
   call repulsion_energy(nat,atype,dist,Zeff,alpha,kf,Erep)
 
@@ -80,16 +94,17 @@ program GFN1_xTB
 
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(x,a25)')              '0th ORDER ENERGY         '
+  write(*,'(a74)') '                          0th ORDER ENERGY                                 '
+  write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
   write(*,'(x,a25,f15.10,2x,a7)') 'Repulsion Energy:        ', Erep, 'Hartree'
+  write(*,'(x,a25,a15,2x,a7)')    'Dispersion Energy:       ', '--', 'Hartree'
+  write(*,*)
   write(*,'(x,a25,f15.10,2x,a7)') 'Total 0th Order Energy:  ', E0  , 'Hartree'
 
 !---------- FIRST ORDER ENERGY ------------------------------------------------!
 
-  write(*,'(a74)') '___________________________________________________________________________'
-  write(*,*)
- 
+
 
 !---------- END PROGRAM -------------------------------------------------------!
 
