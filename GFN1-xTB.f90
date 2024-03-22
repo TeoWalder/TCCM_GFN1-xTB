@@ -93,9 +93,11 @@ program GFN1_xTB
 
 !---------- END PROGRAM -------------------------------------------------------!
 
+  ! Deallocate variables
   deallocate(pos,symbol,dist,atype)
   deallocate(shell,eta)
   deallocate(H0,S)
+
   stop
 
 end program GFN1_xTB

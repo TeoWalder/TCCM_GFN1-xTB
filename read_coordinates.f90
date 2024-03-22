@@ -47,4 +47,6 @@ subroutine read_coordinates(nat,ang_bohr,atype,pos,symbol)
   read(5,*)
   read(5,*)
 
-end subroutine
+  return
+
+end subroutine read_coordinates

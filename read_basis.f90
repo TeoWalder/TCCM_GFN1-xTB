@@ -45,6 +45,6 @@ subroutine read_basis(nshell,nbasis,H0,S,eta,shell)
     if (mod(nbasis,7).ne.0) read(5,*) H0(i,nbasis-mod(nbasis,7)+1:nbasis) 
   end do
 
+  return
 
-
-end subroutine
+end subroutine read_basis

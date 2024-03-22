@@ -37,4 +37,6 @@ subroutine print_matrix(n,mat)
 
   write(*,*)
 
-end subroutine
+  return
+
+end subroutine print_matrix
