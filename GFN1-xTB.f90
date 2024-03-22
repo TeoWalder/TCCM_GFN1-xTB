@@ -74,7 +74,7 @@ program GFN1_xTB
 
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(x,a25)')        '0th ORDER ENERGY         '
+  write(*,'(x,a25)')              '0th ORDER ENERGY         '
   write(*,*)
   write(*,'(x,a25,f15.10,2x,a7)') 'Repulsion Energy:        ', Erep, 'Hartree'
   write(*,'(x,a25,f15.10,2x,a7)') 'Total 0th Order Energy:  ', E0  , 'Hartree'
