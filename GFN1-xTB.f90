@@ -36,7 +36,7 @@ program GFN1_xTB
     read(5,*)
   end do
  
-  ! Number of atoms
+  ! Read number of atoms
   read(5,*) nat
 
   allocate(pos(nat,3),symbol(nat),dist(nat,nat),atype(nat))
@@ -47,13 +47,13 @@ program GFN1_xTB
   ! Read Coordinates
   call read_coordinates(nat,ang_bohr,atype,pos,symbol)
 
-  ! Number of shells and basis functions
+  ! Read number of shells and basis functions
   read(5,*) nshell, nbasis
   read(5,*)
 
   allocate(H0(nbasis,nbasis),S(nbasis,nbasis),shell(nshell,4),eta(nshell))
 
-  ! Number of electrons and occupied orbitals
+  ! Read number of electrons and occupied orbitals
   read(5,*) nel, nocc
 
   read(5,*)
