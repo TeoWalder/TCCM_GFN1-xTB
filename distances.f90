@@ -6,7 +6,7 @@ subroutine distances(n,pos,dist)
   real(8), intent(in)  :: pos(n,3)
   real(8), intent(out) :: dist(n,n)
 
-  integer :: i, j, cnt
+  integer :: i, j
 
   ! Compute euclidean distance sqrt(x^2 + y^2 + z^2)
   dist = 0.d0
