@@ -1,4 +1,4 @@
-SUBROUTINES = distances.f90 0thEnergy.f90
+SUBROUTINES = distances.f90 0thEnergy.f90 print_matrix.f90
 READ = read_parameters.f90 read_coordinates.f90 read_basis.f90
 
 all:

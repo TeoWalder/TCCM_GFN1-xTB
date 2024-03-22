@@ -66,6 +66,12 @@ program GFN1_xTB
   ! Compute Distances
   call distances(nat,pos,dist)
 
+  ! Print Distances
+  write(*,*) 'Distances (Bohr):'
+  write(*,*)
+  call print_matrix(nat,dist)
+
+
 !---------- ZEROTH ORDER ENERGY -----------------------------------------------!
 
   call repulsion_energy(nat,atype,dist,Zeff,alpha,kf,Erep)
