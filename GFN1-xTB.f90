@@ -5,16 +5,20 @@ program GFN1_xTB
 ! PARAMETERS  
   real(8) :: ang_bohr, ev_hartree, kf
   real(8) :: alpha(4), Zeff(4)
+  real(8) :: Gamm(4)
 ! PHYSICAL VARIABLES
   integer                :: nat, nel
   integer                :: nbasis, nshell, nocc
   integer  , allocatable :: atype(:)
   integer  , allocatable :: shell(:,:)
   character, allocatable :: symbol(:)
-  real(8)                :: Erep, E0, E1, E2, E3, Etot
-  real(8)  , allocatable :: H0(:,:), S(:,:)
   real(8)  , allocatable :: pos(:,:), dist(:,:)
+  real(8)                :: Erep, E0, E1, E2, E3, Etot
+  real(8)  , allocatable :: H0(:,:), S(:,:), L(:,:) !!!
   real(8)  , allocatable :: eta(:)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  real(8)  , allocatable :: CKM(:,:,:,:)
+  real(8)  , allocatable :: qorb(:,:), qat(:)
 ! TECHNICAL VARIABLES
   integer :: i
 
@@ -28,9 +32,11 @@ program GFN1_xTB
   write(*,*)
 
 !---------- INITIALIZATION ----------------------------------------------------!
+
+  ! Open parameters.dat
+  open(10, file='parameters.dat', status='old')
   
-  ! Read parameters.dat
-  call read_parameters(ang_bohr, ev_hartree, kf, alpha, Zeff)
+  call read_parameters(ang_bohr, ev_hartree, kf, alpha, Zeff, Gamm)
 
   do i = 1,5
     read(5,*)
@@ -39,7 +45,7 @@ program GFN1_xTB
   ! Read number of atoms
   read(5,*) nat
 
-  allocate(pos(nat,3),symbol(nat),dist(nat,nat),atype(nat))
+  allocate(pos(nat,3), symbol(nat), dist(nat,nat), atype(nat))
 
   read(5,*)
   read(5,*)
@@ -50,15 +56,15 @@ program GFN1_xTB
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
   ! Read Coordinates
-  call read_coordinates(nat,ang_bohr,atype,pos,symbol)
+  call read_coordinates(nat, ang_bohr, atype, pos, symbol)
 
   ! Compute Distances
-  call distances(nat,pos,dist)
+  call distances(nat, pos, dist)
 
   ! Print Distances
   write(*,*) 'Distances (Bohr):'
   write(*,*)
-  call print_matrix(nat,dist)
+  call print_matrix(nat, dist)
 
 !---------- BASIS SET ---------------------------------------------------------!
 
@@ -66,7 +72,7 @@ program GFN1_xTB
   read(5,*) nshell, nbasis
   read(5,*)
 
-  allocate(H0(nbasis,nbasis),S(nbasis,nbasis),shell(nshell,4),eta(nshell))
+  allocate(H0(nbasis,nbasis), S(nbasis,nbasis), shell(nshell,4), eta(nshell))
 
   ! Read number of electrons and occupied orbitals
   read(5,*) nel, nocc
@@ -76,7 +82,7 @@ program GFN1_xTB
   read(5,*) 
 
   ! Basis Set, Electronegativity, H0 & S
-  call read_basis(nshell,nbasis,H0,S,eta,shell)
+  call read_basis(nshell, nbasis, H0, S, eta, shell)
 
   ! Print Basis Set
   write(*,'(a74)') '___________________________________________________________________________'
@@ -84,13 +90,17 @@ program GFN1_xTB
   write(*,'(a74)') '                              BASIS SET                                    '
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,*) 
+  write(*,'(x,a27,i3)') 'Total number of electrons: ', nel
+  write(*,'(x,a27,i3)') 'Occupied orbitals:         ', nocc
+  write(*,'(x,a27,i3)') 'Number of basis functions: ', nbasis
+  write(*,*)
 
 !---------- ZEROth ORDER ENERGY -----------------------------------------------!
 
-  call repulsion_energy(nat,atype,dist,Zeff,alpha,kf,Erep)
+  call repulsion_energy(nat, atype, dist, Zeff, alpha, kf, Erep)
+  ! call dispersion_energy()
 
-  E0 = Erep
+  E0 = Erep !+ Edis
 
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
@@ -102,16 +112,18 @@ program GFN1_xTB
   write(*,*)
   write(*,'(x,a25,f15.10,2x,a7)') 'Total 0th Order Energy:  ', E0  , 'Hartree'
 
-!---------- FIRST ORDER ENERGY ------------------------------------------------!
+!---------- HIGHER ORDER ENERGIES ---------------------------------------------!
 
 
 
 !---------- END PROGRAM -------------------------------------------------------!
 
+  ! Close parameters.dat
+  close(10)
   ! Deallocate variables
-  deallocate(pos,symbol,dist,atype)
-  deallocate(shell,eta)
-  deallocate(H0,S)
+  deallocate(pos, symbol, dist, atype)
+  deallocate(shell, eta)
+  deallocate(H0, S)
 
   stop
 

@@ -1,14 +1,12 @@
-subroutine read_parameters(ang_bohr, ev_hartree, kf, alpha, Zeff)
+subroutine read_parameters(ang_bohr,ev_hartree,kf,alpha,Zeff,Gamm)
 
     real(8), intent(inout) :: ang_bohr, ev_hartree, kf
-    real(8), intent(inout) :: alpha(4), Zeff(4)
+    real(8), intent(inout) :: alpha(4), Zeff(4), Gamm(4)
 
     integer :: i 
 
     ! Read parameters for a.u. conversion and to compute 
     !repulsion energy (eq. 9) from file 'parameters.dat'
-
-    open(10, file='parameters.dat', status='old')
 
                                   ! Lines:
     do i = 1,6
@@ -26,7 +24,11 @@ subroutine read_parameters(ang_bohr, ev_hartree, kf, alpha, Zeff)
     read(10,*)                    ! 18
     read(10,*) Zeff(:)            ! 19
 
-    close(10)
+    do i = 1,115
+      read(10,*)                  ! 20-134
+    end do
+
+    read(10,*) Gamm(:)            ! 135
 
     return
 
