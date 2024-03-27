@@ -14,10 +14,10 @@ program GFN1_xTB
   character, allocatable :: symbol(:)
   real(8)  , allocatable :: pos(:,:), dist(:,:)
   real(8)                :: Erep, E0, E1, E2, E3, Etot
-  real(8)  , allocatable :: H0(:,:), S(:,:), L(:,:) !!!
-  real(8)  , allocatable :: eta(:)
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
+  real(8)  , allocatable :: eta(:), ev(:)
   real(8)  , allocatable :: CKM(:,:,:,:)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   real(8)  , allocatable :: qorb(:,:), qat(:)
 ! TECHNICAL VARIABLES
   integer :: i
@@ -72,7 +72,9 @@ program GFN1_xTB
   read(5,*) nshell, nbasis
   read(5,*)
 
-  allocate(H0(nbasis,nbasis), S(nbasis,nbasis), shell(nshell,4), eta(nshell))
+  allocate(shell(nshell,4), eta(nshell), ev(nbasis))
+  allocate(H0(nbasis,nbasis), S(nbasis,nbasis), X(nbasis,nbasis))
+  allocate(CKM(nat,nat,2,2), qat(), qorb(nat,n))
 
   ! Read number of electrons and occupied orbitals
   read(5,*) nel, nocc
@@ -114,7 +116,17 @@ program GFN1_xTB
 
 !---------- HIGHER ORDER ENERGIES ---------------------------------------------!
 
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
 
+  ! take the inverse square root of the Overlap
+  call inv_sqrt_S(nbasis, S, X)
+
+  ! compute the Coulomb-Kernel Matrix
+!  call CK_matrix()
+
+  ! Self-Consistent Field
+!  call SCF()
 
 !---------- END PROGRAM -------------------------------------------------------!
 
@@ -123,7 +135,7 @@ program GFN1_xTB
   ! Deallocate variables
   deallocate(pos, symbol, dist, atype)
   deallocate(shell, eta)
-  deallocate(H0, S)
+  deallocate(H0, S, X, ev, CKM)
 
   stop
 
