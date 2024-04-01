@@ -41,14 +41,6 @@ subroutine CK_matrix(nat,dist,eta,ckm)
     end do
   end do
 
-  print *, 'CKM:'
-  do i = 1,nat-1
-    do j = i+1,nat
-      print *, ckm(i,j,:,:)
-    end do
-  end do
-
-  stop
   return
 
 end subroutine CK_matrix
