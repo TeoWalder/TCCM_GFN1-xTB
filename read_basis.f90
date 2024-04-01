@@ -1,20 +1,32 @@
-subroutine read_basis(nshell,nbasis,H0,S,eta,shell)
+subroutine read_basis(nat,nshell,nbasis,H0,S,eta,shell)
 
   implicit none
 
-  integer, intent(in) :: nshell, nbasis
+  integer, intent(in) :: nshell
+  integer, intent(in) :: nbasis
+  integer, intent(in) :: nat
 
   real(8), intent(out) :: H0(nbasis,nbasis)
   real(8), intent(out) :: S(nbasis,nbasis)
-  real(8), intent(out) :: eta(nshell)
-  integer, intent(out) :: shell(nshell,4)
+  real(8), intent(out) :: eta(nat,2)
+  real(8), intent(out) :: shell(nshell,5)
 
   integer      :: i, j, cnt, dummy
   character(1) :: cdummy
 
+
   ! Shells and electronegativity
   do i = 1,nshell
-    read(5,*) dummy, shell(i,1), cdummy, shell(i,2:4), eta(i)
+    read(5,*) dummy, shell(i,1), cdummy, shell(i,2:5)
+  end do
+
+  ! Eta matrix (atom x l)
+  cnt = 0
+  do i = 1,nat
+    eta(i,1) = shell(i+cnt,5)
+    eta(i,2) = shell(i+cnt+1,5)
+
+    cnt = cnt + 1
   end do
 
   read(5,*)

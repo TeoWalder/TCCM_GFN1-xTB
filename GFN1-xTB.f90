@@ -10,12 +10,12 @@ program GFN1_xTB
   integer                :: nat, nel
   integer                :: nbasis, nshell, nocc
   integer  , allocatable :: atype(:)
-  integer  , allocatable :: shell(:,:)
   character, allocatable :: symbol(:)
+  real(8)  , allocatable :: shell(:,:)
   real(8)  , allocatable :: pos(:,:), dist(:,:)
   real(8)                :: Erep, E0, E1, E2, E3, Etot
   real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
-  real(8)  , allocatable :: eta(:), ev(:)
+  real(8)  , allocatable :: eta(:,:), ev(:)
   real(8)  , allocatable :: CKM(:,:,:,:)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   real(8)  , allocatable :: qorb(:,:), qat(:)
@@ -72,9 +72,9 @@ program GFN1_xTB
   read(5,*) nshell, nbasis
   read(5,*)
 
-  allocate(shell(nshell,4), eta(nshell), ev(nbasis))
+  allocate(shell(nshell,5), eta(nat,2), ev(nbasis))
   allocate(H0(nbasis,nbasis), S(nbasis,nbasis), X(nbasis,nbasis))
-  allocate(CKM(nat,nat,2,2), qat(), qorb(nat,n))
+  allocate(CKM(nat,nat,2,2))
 
   ! Read number of electrons and occupied orbitals
   read(5,*) nel, nocc
@@ -84,7 +84,7 @@ program GFN1_xTB
   read(5,*) 
 
   ! Basis Set, Electronegativity, H0 & S
-  call read_basis(nshell, nbasis, H0, S, eta, shell)
+  call read_basis(nat, nshell, nbasis, H0, S, eta, shell)
 
   ! Print Basis Set
   write(*,'(a74)') '___________________________________________________________________________'
@@ -123,7 +123,7 @@ program GFN1_xTB
   call inv_sqrt_S(nbasis, S, X)
 
   ! compute the Coulomb-Kernel Matrix
-!  call CK_matrix()
+  call CK_matrix(nat, dist, eta, ckm)
 
   ! Self-Consistent Field
 !  call SCF()
