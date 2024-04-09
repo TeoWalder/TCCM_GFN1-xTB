@@ -20,7 +20,11 @@ subroutine read_basis(nat,nshell,nbasis,H0,S,eta,shell)
     read(5,*) dummy, shell(i,1), cdummy, shell(i,2:5)
   end do
 
-  ! Eta matrix (atom x l)
+  ! Shell Matrix structure:
+  !        |   1   |     2      | 3  |           4          |     5    |
+  ! #shell | #atom | shell type | n0 | first basis function | hardness |
+
+  ! build eta matrix (atom x l)
   cnt = 0
   do i = 1,nat
     eta(i,1) = shell(i+cnt,5)
