@@ -1,38 +1,36 @@
-subroutine SCF(nBas,nO,S,T,V,H0,ERI,X,ENuc,EHF,e,c)
+subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
 
   implicit none
 
   ! Input variables
-  integer,intent(in)            :: nBas
-  integer,intent(in)            :: nO
-  double precision,intent(in)   :: S(nBas,nBas)
-  double precision,intent(in)   :: T(nBas,nBas)
-  double precision,intent(in)   :: V(nBas,nBas)
-  double precision,intent(in)   :: H0(nBas,nBas) 
-  double precision,intent(in)   :: X(nBas,nBas) 
-  double precision,intent(in)   :: ERI(nBas,nBas,nBas,nBas)
-  double precision,intent(in)   :: ENuc
-  ! Local variables
-  integer,parameter             :: maxSCF = 64
-  double precision,parameter    :: thresh = 1d-5
-  integer                       :: nSCF
-  double precision              :: Conv
-  double precision              :: Gap
-  double precision              :: ET,EV,EJ
-  double precision              :: EK
-  double precision,allocatable  :: cp(:,:)
-  double precision,allocatable  :: P(:,:)
-  double precision,allocatable  :: J(:,:)
-  double precision,allocatable  :: K(:,:)
-  double precision,allocatable  :: F(:,:),Fp(:,:)
-  double precision,allocatable  :: error(:,:)
-  double precision              :: trace_matrix(nBas,nBas)
-  ! Counters
-  integer                       :: mu, nu, si, la
+  integer, intent(in)  :: nBas
+  integer, intent(in)  :: nOcc
+  integer, intent(in)  :: nAt
+  real(8), intent(in)  :: S(nBas,nBas)
+  real(8), intent(in)  :: H0(nBas,nBas)
+  real(8), intent(in)  :: X(nBas,nBas)
+  real(8), intent(in)  :: shell(nBas,5)
+  real(8), intent(in)  :: CKM(nAt,nAt,4,4)
+  real(8), intent(in)  :: Gamm(nAt)
   ! Output variables
-  double precision,intent(out)  :: EHF
-  double precision,intent(out)  :: e(nBas)
-  double precision,intent(out)  :: c(nBas,nBas)
+  real(8), intent(out) :: Etot
+  real(8), intent(out) :: E1, E2, E3
+  real(8), intent(out) :: qA(nAt)
+  ! Local variables
+  integer, parameter   :: maxSCF = 60
+  real(8), parameter   :: thresh = 1.d-5
+  real(8), parameter   :: qthresh = 1.d-3
+  real(8)              :: Conv
+  real(8)              :: DqA, DqS
+  real(8), allocatable :: C(:,:)
+  real(8), allocatable :: Cp(:,:)
+  real(8), allocatable :: P(:,:)
+  real(8), allocatable :: F(:,:), Fp(:,:)
+  real(8), allocatable :: qS_old(:,:), qS_new(:,:)
+  real(8), allocatable :: qA_old(:,:), qA_new(:,:)
+  ! Counters
+  integer              :: nSCF
+  integer              :: mu, nu, si, la
 
   write(*,*)
   write(*,*)'************************************************'
@@ -42,33 +40,31 @@ subroutine SCF(nBas,nO,S,T,V,H0,ERI,X,ENuc,EHF,e,c)
 
   ! Memory allocation
 
-  allocate(cp(nBas,nBas),P(nBas,nBas),      &
-           J(nBas,nBas),K(nBas,nBas),F(nBas,nBas),Fp(nBas,nBas), &
-           error(nBas,nBas))
+  allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas))
+  allocate(charges)
 
   ! Guess coefficients and eigenvalues
 
   F(:,:) = H0(:,:)
-  c(:,:) = 0.d0
 
   ! Initialization
 
   nSCF = 0
   Conv = 1d0
 
-!------------------------------------------------------------------------
-! Main SCF loop
-!------------------------------------------------------------------------
+!-----------------------------------------------------------
+! SCF loop
+!-----------------------------------------------------------
 
   write(*,*)
   write(*,*)'----------------------------------------------------'
   write(*,*)'| SCF calculation                                  |'
   write(*,*)'----------------------------------------------------'
-  write(*,'(1X,A1,1X,A3,1X,A1,1X,A16,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X)') &
-            '|','#','|','Energies','|','Conv','|','HL Gap','|'
+  write(*,'(1x,a1,1x,a3,1x,a1,1x,a16,1x,a1,1x,a10,1X,a1,1x,a10,1x,a1,1x)') &
+            '|','#','|','DqS change','|','DqS change','|'
   write(*,*)'----------------------------------------------------'
 
-  do while(Conv.gt.thresh.and.nSCF.lt.maxSCF)
+  do while(conv.gt.thresh.and.nSCF.lt.maxSCF)
 
     ! Increment 
 
@@ -80,37 +76,12 @@ subroutine SCF(nBas,nO,S,T,V,H0,ERI,X,ENuc,EHF,e,c)
       do nu = 1,nBas
         P(mu,nu) = 0.d0
         do si = 1,nO
-          P(mu,nu) = P(mu,nu) + 2.d0*c(mu,si)*c(nu,si)
+          P(mu,nu) = P(mu,nu) + 2.d0*C(mu,si)*C(nu,si)
         end do
       end do
     end do
 
-    
-    ! J, K. and F
-
-    do mu = 1,nBas
-      do nu = 1,nBas
-        J(mu,nu) = 0.d0
-        do la = 1,nBas
-          do si = 1,nBas
-            J(mu,nu) = J(mu,nu) + P(la,si)*ERI(mu,la,nu,si)
-          end do
-        end do
-      end do
-    end do
-
-    do mu = 1,nBas
-      do nu = 1,nBas
-        K(mu,nu) = 0.d0
-        do la = 1,nBas
-          do si = 1,nBas
-            K(mu,nu) = K(mu,nu) - 0.5d0*P(la,si)*ERI(mu,nu,la,si)
-          end do
-        end do
-      end do
-    end do
-
-    F(:,:) = Hc(:,:) + J(:,:) + K(:,:)
+    F(:,:) = H0(:,:)
 
     ! F' and C'
 
@@ -124,33 +95,57 @@ subroutine SCF(nBas,nO,S,T,V,H0,ERI,X,ENuc,EHF,e,c)
 
     c = matmul(X,cp)
 
+    ! Compute charges
+
+    do [atomo,shell]
+      qS_new([atomo,shell]) = shell([atomo,shell],3)
+      qS_new([atomo,shell]) = qS_new([atomo,shell]) - S([atomo,shell])P([atomo,shell])
+    end do
+    
+    qA_new = sum(qS_new([atomo,:]))
+
+    ! Cycle First Loop
+
+    if (nSCF.eq.1) then 
+      qS_old = qS_new
+      cycle
+    end if
+
     ! Convergency Criterium
 
-    if (nSCF.eq.1) cycle
-    error = matmul(F,matmul(P,S)) - matmul(S,matmul(P,F))
-    Conv = maxval(dabs(error))
+    DqS = abs(max(qS_new - qS_old))
+    DqA = abs(max(qA_new - qA_old))
+    
+    conv = max(Dqs,DqA)
+       
+    ! New Charges
+    
+    if (DqS.ge.qthresh) then
+      qS_old = qS_new + 0.4d0*DqS   ! dumped
+    else 
+      qS_old = qS_new               ! not dumped
+    end if
+    
+    if (DqA.ge.qthresh) then
+      qA_old = qA_new + 0.4d0*DqA   ! dumped
+    else
+      qA_old = qA_new               ! not dumped
+    end if
 
-    ! Step Energy and HL gap
+    ! Compute energies
 
-    trace_matrix = matmul(P,F+Hc)
-    EHF = 0.d0
-    do mu = 1,nBas
-      EHF = EHF + trace_matrix(mu,mu)
-    end do
-    EHF = EHF*0.5d0
 
-    Gap = e(nO+1) - e(nO)
 
     ! Dump results
 
-    write(*,'(1X,A1,1X,I3,1X,A1,1X,F16.10,1X,A1,1X,F10.6,1X,A1,1X,F10.6,1X,A1,1X)') &
-      '|',nSCF,'|',EHF+ENuc,'|',Conv,'|',Gap,'|'
+    write(*,'(1x,a1,1x,i3,1x,a1,1x,f16.10,1x,a1,1x,f10.6,1x,a1,1x)') &
+            '|',nSCF,'|',DqS,'|',DqA,'|'
  
   enddo
   write(*,*)'----------------------------------------------------'
-!------------------------------------------------------------------------
+!-----------------------------------------------------------
 ! End of SCF loop
-!------------------------------------------------------------------------
+!-----------------------------------------------------------
 
 ! Did it actually converge?
 
@@ -165,9 +160,5 @@ subroutine SCF(nBas,nO,S,T,V,H0,ERI,X,ENuc,EHF,e,c)
     stop
 
   endif
-
-  ! Compute final HF energy
-
-  call print_RHF(nBas,nO,e,C,ENuc,ET,EV,EJ,EK,EHF)
 
 end subroutine SCF
