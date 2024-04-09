@@ -15,16 +15,16 @@ subroutine read_basis(nat,nshell,nbasis,H0,S,eta,shell)
   character(1) :: cdummy
 
 
-  ! Shells and electronegativity
+  ! Shells and Electronegativity
   do i = 1,nshell
     read(5,*) dummy, shell(i,1), cdummy, shell(i,2:5)
   end do
 
-  ! Shell Matrix structure:
+  ! Shell Matrix Etructure:
   !        |   1   |     2      | 3  |           4          |     5    |
   ! #shell | #atom | shell type | n0 | first basis function | hardness |
 
-  ! build eta matrix (atom x l)
+  ! Build Eta Matrix (atom x l)
   cnt = 0
   do i = 1,nat
     eta(i,1) = shell(i+cnt,5)
@@ -36,7 +36,7 @@ subroutine read_basis(nat,nshell,nbasis,H0,S,eta,shell)
   read(5,*)
   read(5,*)
 
-  ! S overlap matrix elements
+  ! Overlap Matrix Elements
   do i = 1,nbasis
     read(5,*)
     cnt = 0
@@ -50,7 +50,7 @@ subroutine read_basis(nat,nshell,nbasis,H0,S,eta,shell)
   read(5,*)
   read(5,*)
 
-  ! H0 hamiltonian elements
+  ! H0 Hamiltonian Elements
   do i = 1,nbasis
     read(5,*)
     cnt = 0
