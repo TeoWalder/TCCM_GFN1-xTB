@@ -10,7 +10,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
   real(8), intent(in)  :: H0(nBas,nBas)
   real(8), intent(in)  :: X(nBas,nBas)
   real(8), intent(in)  :: shell(nBas,5)
-  real(8), intent(in)  :: CKM(nAt,nAt,4,4)
+  real(8), intent(in)  :: CKM(nAt,nAt,2,2)
   real(8), intent(in)  :: Gamm(nAt)
   ! Output variables
   real(8), intent(out) :: Etot
@@ -31,6 +31,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
   ! Counters
   integer              :: nSCF
   integer              :: mu, nu, si, la
+  integer              :: A, B, l, lp
 
   write(*,*)
   write(*,*)'************************************************'
@@ -41,11 +42,14 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
   ! Memory allocation
 
   allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas))
-  allocate(charges)
+  allocate()
 
   ! Guess coefficients and eigenvalues
 
   F(:,:) = H0(:,:)
+
+  qA_old = 0.d0
+  qA = 0.d0
 
   ! Initialization
 
@@ -70,46 +74,70 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
 
     nSCF = nSCF + 1
 
+    ! F' and C'
+
+    Fp = matmul(transpose(X),matmul(F,X))
+
+    Cp = Fp
+
+    call diagonalize_matrix(nBas,Cp,e)
+
+    ! Coefficients Matrix
+
+    C = matmul(X,Cp)
+
     ! Update Density Matrix
 
     do mu = 1,nBas
       do nu = 1,nBas
         P(mu,nu) = 0.d0
-        do si = 1,nO
+        do si = 1,nOcc
           P(mu,nu) = P(mu,nu) + 2.d0*C(mu,si)*C(nu,si)
         end do
       end do
     end do
 
-    F(:,:) = H0(:,:)
+    ! Compute Shell Charges (eq.29)
 
-    ! F' and C'
-
-    Fp = matmul(transpose(X),matmul(F,X))
-
-    cp = Fp
-
-    call diagonalize_matrix(nBas,cp,e)
-
-    ! Coefficients Matrix
-
-    c = matmul(X,cp)
-
-    ! Compute charges
-
-    do [atomo,shell]
-      qS_new([atomo,shell]) = shell([atomo,shell],3)
-      qS_new([atomo,shell]) = qS_new([atomo,shell]) - S([atomo,shell])P([atomo,shell])
+    do A = 1,nAt
+      do l = 1,2
+        qS_new(A,l) = shell(2*(A-1)+l,3)
+        do nu = 1,nBas
+          qS_new(A,l) = qS_new(A,l) - S(2*(A-1)+l,nu)*P(2*(A-1)+l,nu)
+        end do
+      end do
     end do
     
-    qA_new = sum(qS_new([atomo,:]))
+    ! Compute Atomic Charges (eq.20)
 
-    ! Cycle First Loop
+    do A = 1,nAt
+      qA_new(A) = sum(qS_new(A,:))
+    end do
 
-    if (nSCF.eq.1) then 
-      qS_old = qS_new
-      cycle
-    end if
+    ! Update F
+
+    F(:,:) = H0(:,:)
+
+    do A = 1,nAt-1
+      do l = 1,2
+
+        shift_sh_A = sum(CKM(A,:,l,:)*qS_new(:,:))
+        shift_at_A = Gamm(A)*qA_new(A)*qA_new(A)
+        do B = A+1,nAt
+          do lp = 1,2
+            shift_sh_B = sum(CKM(B,:,lp,:)*qS_new(:,:))
+            shift_at_B = Gamm(B)*qA_new(B)
+    
+            mu = 2*(A-1) + l
+            nu = 2*(B-1) + lp
+  
+            F(mu,nu) = F(mu,nu) - 0.5d0*S(mu,nu)  &
+                       *(shift_sh_A + shift_sh_B + shift_at_A + shift_at_B)
+          end do
+        end do
+
+      end do
+    end do
 
     ! Convergency Criterium
 
