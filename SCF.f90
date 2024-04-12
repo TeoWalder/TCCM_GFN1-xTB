@@ -1,4 +1,4 @@
-subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
+subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
   implicit none
 
@@ -13,7 +13,6 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
   real(8), intent(in)  :: CKM(nAt,nAt,2,2)
   real(8), intent(in)  :: Gamm(nAt)
   ! Output variables
-  real(8), intent(out) :: Etot
   real(8), intent(out) :: E1, E2, E3
   real(8), intent(out) :: qA(nAt)
   ! Local variables
@@ -26,29 +25,32 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
   real(8), allocatable :: Cp(:,:)
   real(8), allocatable :: P(:,:)
   real(8), allocatable :: F(:,:), Fp(:,:)
+  real(8)              :: e(nBas)
   real(8), allocatable :: qS_old(:,:), qS_new(:,:)
-  real(8), allocatable :: qA_old(:,:), qA_new(:,:)
+  real(8), allocatable :: qA_old(:)
+  real(8)              :: shift_at_A, shift_at_B
+  real(8)              :: shift_sh_A, shift_sh_B
   ! Counters
   integer              :: nSCF
   integer              :: mu, nu, si, la
   integer              :: A, B, l, lp
 
+  write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,*)'************************************************'
-  write(*,*)'|       Self-Consistent Field Calculation      |'
-  write(*,*)'************************************************'
+  write(*,'(a74)') '                         SELF-CONSISTENT FIELD                             '
+  write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
 
   ! Memory allocation
 
   allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas))
-  allocate()
+  allocate(qS_old(nAt,2), qS_new(nAt,2), qA_old(nAt))
 
   ! Guess coefficients and eigenvalues
 
   F(:,:) = H0(:,:)
 
-  qA_old = 0.d0
+  qS_new = 0.d0
   qA = 0.d0
 
   ! Initialization
@@ -56,14 +58,8 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
   nSCF = 0
   Conv = 1d0
 
-!-----------------------------------------------------------
-! SCF loop
-!-----------------------------------------------------------
+!------ SCF loop ------------------------------------------!
 
-  write(*,*)
-  write(*,*)'----------------------------------------------------'
-  write(*,*)'| SCF calculation                                  |'
-  write(*,*)'----------------------------------------------------'
   write(*,'(1x,a1,1x,a3,1x,a1,1x,a16,1x,a1,1x,a10,1X,a1,1x,a10,1x,a1,1x)') &
             '|','#','|','DqS change','|','DqS change','|'
   write(*,*)'----------------------------------------------------'
@@ -107,11 +103,11 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
         end do
       end do
     end do
-    
+ 
     ! Compute Atomic Charges (eq.20)
 
     do A = 1,nAt
-      qA_new(A) = sum(qS_new(A,:))
+      qA(A) = sum(qS_new(A,:))
     end do
 
     ! Update F
@@ -122,11 +118,11 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
       do l = 1,2
 
         shift_sh_A = sum(CKM(A,:,l,:)*qS_new(:,:))
-        shift_at_A = Gamm(A)*qA_new(A)*qA_new(A)
+        shift_at_A = Gamm(A)*qA(A)*qA(A)
         do B = A+1,nAt
           do lp = 1,2
             shift_sh_B = sum(CKM(B,:,lp,:)*qS_new(:,:))
-            shift_at_B = Gamm(B)*qA_new(B)
+            shift_at_B = Gamm(B)*qA(B)
     
             mu = 2*(A-1) + l
             nu = 2*(B-1) + lp
@@ -139,10 +135,32 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
       end do
     end do
 
+
+    ! Compute energies
+
+    E1 = 0.d0
+    do mu = 1,nBas
+      do nu = 1,nBas
+        E1 = E1 + P(mu,nu)*H0(mu,nu)
+      end do
+    end do
+
+    E2 = 0.d0
+!    do
+!      do
+!        E2 = E2 +
+!      end do
+!    end do
+
+    E3 = 0.d0
+    do A = 1,nAt
+      E3 = E3 + Gamm(A)*qA(A)
+    end do
+
     ! Convergency Criterium
 
-    DqS = abs(max(qS_new - qS_old))
-    DqA = abs(max(qA_new - qA_old))
+    DqS = abs(maxval(qS_new - qS_old))
+    DqA = abs(maxval(qA - qA_old))
     
     conv = max(Dqs,DqA)
        
@@ -155,14 +173,10 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
     end if
     
     if (DqA.ge.qthresh) then
-      qA_old = qA_new + 0.4d0*DqA   ! dumped
+      qA_old = qA + 0.4d0*DqA       ! dumped
     else
-      qA_old = qA_new               ! not dumped
+      qA_old = qA                   ! not dumped
     end if
-
-    ! Compute energies
-
-
 
     ! Dump results
 
@@ -171,11 +185,10 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
  
   enddo
   write(*,*)'----------------------------------------------------'
-!-----------------------------------------------------------
-! End of SCF loop
-!-----------------------------------------------------------
 
-! Did it actually converge?
+!------ End of SCF loop -----------------------------------!
+
+  ! Did it actually converge?
 
   if(nSCF.eq.maxSCF) then
 
@@ -188,5 +201,10 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,Etot,qA)
     stop
 
   endif
+
+  ! Deallocate variables
+
+  deallocate(C, Cp, P, F, Fp)
+  deallocate(qS_old, qS_new, qA_old)
 
 end subroutine SCF

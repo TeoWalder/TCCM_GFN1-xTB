@@ -7,8 +7,8 @@ program GFN1_xTB
   real(8) :: alpha(4), Zeff(4)
   real(8) :: Gamm(4)
 ! PHYSICAL VARIABLES
-  integer                :: nat, nel
-  integer                :: nbasis, nshell, nocc
+  integer                :: nAt, nel
+  integer                :: nBas, nshell, nOcc
   integer  , allocatable :: atype(:)
   character, allocatable :: symbol(:)
   real(8)  , allocatable :: shell(:,:)
@@ -17,18 +17,17 @@ program GFN1_xTB
   real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
   real(8)  , allocatable :: eta(:,:), ev(:)
   real(8)  , allocatable :: CKM(:,:,:,:)
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  real(8)  , allocatable :: qorb(:,:), qat(:)
+  real(8)  , allocatable :: q(:)
 ! TECHNICAL VARIABLES
   integer :: i
 
 !---------- HELLO WORLD -------------------------------------------------------!
 
   write(*,*) ' ______________________________________ '
-  write(*,*) '~                                      ~' 
-  write(*,*) '~      Online Programming Project      ~'
-  write(*,*) '~      GFN1-xTB Semiempirical DFT      ~'
-  write(*,*) '~______________________________________~'
+  write(*,*) '|                                      |' 
+  write(*,*) '|      Online Programming Project      |'
+  write(*,*) '|      GFN1-xTB Semiempirical DFT      |'
+  write(*,*) '|______________________________________|'
   write(*,*)
 
 !---------- INITIALIZATION ----------------------------------------------------!
@@ -43,9 +42,9 @@ program GFN1_xTB
   end do
  
   ! Read number of atoms
-  read(5,*) nat
+  read(5,*) nAt
 
-  allocate(pos(nat,3), symbol(nat), dist(nat,nat), atype(nat))
+  allocate(pos(nAt,3), symbol(nat), dist(nat,nat), atype(nat), q(nat))
 
   read(5,*)
   read(5,*)
@@ -55,36 +54,36 @@ program GFN1_xTB
   write(*,'(a74)') '                          MOLECULAR STRUCTURE                              '
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  ! Read Coordinates
-  call read_coordinates(nat, ang_bohr, atype, pos, symbol)
+  ! Read CoordinAtes
+  call read_coordinAtes(nat, ang_bohr, atype, pos, symbol)
 
   ! Compute Distances
-  call distances(nat, pos, dist)
+  call distances(nAt, pos, dist)
 
   ! Print Distances
   write(*,*) 'Distances (Bohr):'
   write(*,*)
-  call print_matrix(nat, dist)
+  call print_matrix(nAt, dist)
 
 !---------- BASIS SET ---------------------------------------------------------!
 
   ! Read number of shells and basis functions
-  read(5,*) nshell, nbasis
+  read(5,*) nshell, nBas
   read(5,*)
 
-  allocate(shell(nshell,5), eta(nat,2), ev(nbasis))
-  allocate(H0(nbasis,nbasis), S(nbasis,nbasis), X(nbasis,nbasis))
-  allocate(CKM(nat,nat,2,2))
+  allocate(shell(nshell,5), eta(nAt,2), ev(nBas))
+  allocate(H0(nBas,nBas), S(nBas,nBas), X(nBas,nBas))
+  allocate(CKM(nAt,nat,2,2))
 
   ! Read number of electrons and occupied orbitals
-  read(5,*) nel, nocc
+  read(5,*) nel, nOcc
 
   read(5,*)
   read(5,*)
   read(5,*) 
 
   ! Basis Set, Electronegativity, H0 & S
-  call read_basis(nat, nshell, nbasis, H0, S, eta, shell)
+  call read_basis(nAt, nshell, nBas, H0, S, eta, shell)
 
   ! Print Basis Set
   write(*,'(a74)') '___________________________________________________________________________'
@@ -93,13 +92,13 @@ program GFN1_xTB
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
   write(*,'(x,a27,i3)') 'Total number of electrons: ', nel
-  write(*,'(x,a27,i3)') 'Occupied orbitals:         ', nocc
-  write(*,'(x,a27,i3)') 'Number of basis functions: ', nbasis
+  write(*,'(x,a27,i3)') 'Occupied orbitals:         ', nOcc
+  write(*,'(x,a27,i3)') 'Number of basis functions: ', nBas
   write(*,*)
 
 !---------- ZEROth ORDER ENERGY -----------------------------------------------!
 
-  call repulsion_energy(nat, atype, dist, Zeff, alpha, kf, Erep)
+  call repulsion_energy(nAt, atype, dist, Zeff, alpha, kf, Erep)
   ! call dispersion_energy()
 
   E0 = Erep !+ Edis
@@ -116,17 +115,35 @@ program GFN1_xTB
 
 !---------- HIGHER ORDER ENERGIES ---------------------------------------------!
 
-  write(*,'(a74)') '___________________________________________________________________________'
-  write(*,*)
-
   ! take the inverse square root of the Overlap
-  call inv_sqrt_S(nbasis, S, X)
+  call inv_sqrt_S(nBas, S, X)
 
   ! compute the Coulomb-Kernel Matrix
-  call CK_matrix(nat, dist, eta, ckm)
+  call CK_matrix(nAt, dist, eta, ckm)
 
   ! Self-Consistent Field
-!  call SCF()
+  call SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,q)
+
+!--------- TOTAL ENERGY & CHARGES ---------------------------------------------!
+
+  Etot = E1 + E2 + E3
+
+  Etot = 1.d0
+  q(:) = 0.d0
+
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
+  write(*,'(a74)') '                               RESULTS                                     '
+  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,*)
+  write(*,'(x,a25,f15.10,2x,a7)') 'Total energy:            ', Etot           , 'Hartree'
+  write(*,'(x,a25,f15.10,2x,a2)') 'Total energy:            ', Etot*ev_hartree, 'eV'
+  write(*,*)
+  write(*,'(x,a25)') 'Atomic Charges:          '
+  write(*,*)
+  do i = 1,nAt
+    write(*,'(1x,a1,f16.10)') symbol(i), q(i)
+  end do
 
 !---------- END PROGRAM -------------------------------------------------------!
 
@@ -134,7 +151,7 @@ program GFN1_xTB
   close(10)
   ! Deallocate variables
   deallocate(pos, symbol, dist, atype)
-  deallocate(shell, eta)
+  deallocate(shell, eta, q)
   deallocate(H0, S, X, ev, CKM)
 
   stop
