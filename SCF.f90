@@ -122,7 +122,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
         do B = A+1,nAt
           do lp = 1,2
             shift_sh_B = sum(CKM(B,:,lp,:)*qS_new(:,:))
-            shift_at_B = Gamm(B)*qA(B)
+            shift_at_B = Gamm(B)*qA(B)*qA(B)
     
             mu = 2*(A-1) + l
             nu = 2*(B-1) + lp
