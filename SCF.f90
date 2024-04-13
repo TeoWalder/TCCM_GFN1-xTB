@@ -60,10 +60,10 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
 !------ SCF loop ------------------------------------------!
 
-  write(*,'(1x,a1,1x,a3,1x,a1,1x,a16,1x,a1,1x,a10,1X,a1,1x,a10,1x,a1,1x)') &
-            '|','#','|','DqS change','|','DqS change','|'
-  write(*,*)'----------------------------------------------------'
-
+  write(*,'(1x,a1,1x,a3,1x,a1,1x,a10,1x,a1,1x,a10,1X,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x)') &
+            '|','#','|','Dq Shell','|','Dq Atom','|','E(1)','|','E(2)','|','E(3)','|'
+  write(*,*)'------------------------------------------------------------------------'
+   
   do while(conv.gt.thresh.and.nSCF.lt.maxSCF)
 
     ! Increment 
@@ -103,7 +103,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
         end do
       end do
     end do
- 
+
     ! Compute Atomic Charges (eq.20)
 
     do A = 1,nAt
@@ -134,7 +134,6 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
       end do
     end do
-
 
     ! Compute energies
 
@@ -180,11 +179,11 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
     ! Dump results
 
-    write(*,'(1x,a1,1x,i3,1x,a1,1x,f16.10,1x,a1,1x,f10.6,1x,a1,1x)') &
-            '|',nSCF,'|',DqS,'|',DqA,'|'
+    write(*,'(1x,a1,1x,i3,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x)') &
+            '|',nSCF,'|',DqS,'|',DqA,'|',E1,'|',E2,'|',E3,'|'
  
   enddo
-  write(*,*)'----------------------------------------------------'
+  write(*,*)'------------------------------------------------------------------------'
 
 !------ End of SCF loop -----------------------------------!
 
@@ -200,7 +199,15 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
     stop
 
-  endif
+  else
+
+    write(*,*)
+    write(*,*)'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    write(*,*)'                    SCF Converged                   '
+    write(*,*)'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    write(*,*)
+
+  end if
 
   ! Deallocate variables
 

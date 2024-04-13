@@ -103,16 +103,6 @@ program GFN1_xTB
 
   E0 = Erep !+ Edis
 
-  write(*,'(a74)') '___________________________________________________________________________'
-  write(*,*)
-  write(*,'(a74)') '                          0th ORDER ENERGY                                 '
-  write(*,'(a74)') '___________________________________________________________________________'
-  write(*,*)
-  write(*,'(x,a25,f15.10,2x,a7)') 'Repulsion Energy:        ', Erep, 'Hartree'
-  write(*,'(x,a25,a15,2x,a7)')    'Dispersion Energy:       ', '--', 'Hartree'
-  write(*,*)
-  write(*,'(x,a25,f15.10,2x,a7)') 'Total 0th Order Energy:  ', E0  , 'Hartree'
-
 !---------- HIGHER ORDER ENERGIES ---------------------------------------------!
 
   ! take the inverse square root of the Overlap
@@ -126,16 +116,18 @@ program GFN1_xTB
 
 !--------- TOTAL ENERGY & CHARGES ---------------------------------------------!
 
-  Etot = E1 + E2 + E3
-
-  Etot = 1.d0
-  q(:) = 0.d0
+  Etot = E0 + E1 + E2 + E3
 
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
   write(*,'(a74)') '                               RESULTS                                     '
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
+  write(*,'(x,a25,f15.10,2x,a7)') 'Repulsion Energy:        ', Erep           , 'Hartree'
+  write(*,'(x,a25,a15,2x,a7)')    'Dispersion Energy:       ', '--'           , 'Hartree'
+  write(*,'(x,a25,f15.10,2x,a7)') '1st Order Energy:        ', E1             , 'Hartree'
+  write(*,'(x,a25,f15.10,2x,a7)') '2nd Order Energy:        ', E2             , 'Hartree'
+  write(*,'(x,a25,f15.10,2x,a7)') '3rd Order Energy:        ', E3             , 'Hartree'
   write(*,'(x,a25,f15.10,2x,a7)') 'Total energy:            ', Etot           , 'Hartree'
   write(*,'(x,a25,f15.10,2x,a2)') 'Total energy:            ', Etot*ev_hartree, 'eV'
   write(*,*)
