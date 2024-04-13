@@ -46,12 +46,9 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas))
   allocate(qS_old(nAt,2), qS_new(nAt,2), qA_old(nAt))
 
-  ! Guess coefficients and eigenvalues
+  ! Initial Guess
 
   F(:,:) = H0(:,:)
-
-  qS_new = 0.d0
-  qA = 0.d0
 
   ! Initialization
 
@@ -129,6 +126,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   
             F(mu,nu) = F(mu,nu) - 0.5d0*S(mu,nu)  &
                        *(shift_sh_A + shift_sh_B + shift_at_A + shift_at_B)
+            F(nu,mu) = F(mu,nu)
           end do
         end do
 
@@ -161,7 +159,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
     DqS = abs(maxval(qS_new - qS_old))
     DqA = abs(maxval(qA - qA_old))
     
-    conv = max(Dqs,DqA)
+    conv = max(Dqs, DqA)
        
     ! New Charges
     
