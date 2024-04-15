@@ -8,14 +8,14 @@ program GFN1_xTB
   real(8) :: Gamm(4)
 ! PHYSICAL VARIABLES
   integer                :: nAt, nel
-  integer                :: nBas, nshell, nOcc
+  integer                :: nBas, nSh, nOcc
   integer  , allocatable :: atype(:)
   character, allocatable :: symbol(:)
   real(8)  , allocatable :: shell(:,:)
   real(8)  , allocatable :: pos(:,:), dist(:,:)
   real(8)                :: Erep, E0, E1, E2, E3, Etot
   real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
-  real(8)  , allocatable :: eta(:,:), ev(:)
+  real(8)  , allocatable :: eta(:,:)
   real(8)  , allocatable :: CKM(:,:,:,:)
   real(8)  , allocatable :: q(:)
 ! TECHNICAL VARIABLES
@@ -68,10 +68,10 @@ program GFN1_xTB
 !---------- BASIS SET ---------------------------------------------------------!
 
   ! Read number of shells and basis functions
-  read(5,*) nshell, nBas
+  read(5,*) nSh, nBas
   read(5,*)
 
-  allocate(shell(nshell,5), eta(nAt,2), ev(nBas))
+  allocate(shell(nSh,5), eta(nAt,2))
   allocate(H0(nBas,nBas), S(nBas,nBas), X(nBas,nBas))
   allocate(CKM(nAt,nat,2,2))
 
@@ -83,7 +83,7 @@ program GFN1_xTB
   read(5,*) 
 
   ! Basis Set, Electronegativity, H0 & S
-  call read_basis(nAt, nshell, nBas, H0, S, eta, shell)
+  call read_basis(nAt, nSh, nBas, H0, S, eta, shell)
 
   ! Print Basis Set
   write(*,'(a74)') '___________________________________________________________________________'
@@ -112,7 +112,7 @@ program GFN1_xTB
   call CK_matrix(nAt, dist, eta, ckm)
 
   ! Self-Consistent Field
-  call SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,q)
+  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, Gamm, E1, E2, E3, q)
 
 !--------- TOTAL ENERGY & CHARGES ---------------------------------------------!
 
@@ -144,7 +144,7 @@ program GFN1_xTB
   ! Deallocate variables
   deallocate(pos, symbol, dist, atype)
   deallocate(shell, eta, q)
-  deallocate(H0, S, X, ev, CKM)
+  deallocate(H0, S, X, CKM)
 
   stop
 

@@ -1,4 +1,4 @@
-subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
+subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
   implicit none
 
@@ -6,10 +6,12 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   integer, intent(in)  :: nBas
   integer, intent(in)  :: nOcc
   integer, intent(in)  :: nAt
+  integer, intent(in)  :: nSh
+  integer, intent(in)  :: atype(nAt)
   real(8), intent(in)  :: S(nBas,nBas)
   real(8), intent(in)  :: H0(nBas,nBas)
   real(8), intent(in)  :: X(nBas,nBas)
-  real(8), intent(in)  :: shell(nBas,5)
+  real(8), intent(in)  :: shell(nSh,5)
   real(8), intent(in)  :: CKM(nAt,nAt,2,2)
   real(8), intent(in)  :: Gamm(nAt)
   ! Output variables
@@ -26,14 +28,15 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   real(8), allocatable :: P(:,:)
   real(8), allocatable :: F(:,:), Fp(:,:)
   real(8)              :: e(nBas)
-  real(8), allocatable :: qS_old(:,:), qS_new(:,:)
+  real(8), allocatable :: qS_old(:,:), qS(:,:)
   real(8), allocatable :: qA_old(:)
   real(8)              :: shift_at_A, shift_at_B
   real(8)              :: shift_sh_A, shift_sh_B
   ! Counters
   integer              :: nSCF
   integer              :: mu, nu, si, la
-  integer              :: A, B, l, lp
+  integer              :: ish_A, ish_B
+  integer              :: A, B, Ca, l, lp, lpp
 
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
@@ -44,11 +47,13 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   ! Memory allocation
 
   allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas))
-  allocate(qS_old(nAt,2), qS_new(nAt,2), qA_old(nAt))
+  allocate(qS_old(nAt,2), qS(nAt,2), qA_old(nAt))
 
   ! Initial Guess
 
   F(:,:) = H0(:,:)
+  qS_old = 0.d0
+  qA_old = 0.d0
 
   ! Initialization
 
@@ -79,7 +84,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
     C = matmul(X,Cp)
 
-    ! Update Density Matrix
+    ! Cmpute Density Matrix
 
     do mu = 1,nBas
       do nu = 1,nBas
@@ -90,43 +95,72 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
       end do
     end do
 
-    ! Compute Shell Charges (eq.29)
+    ! Compute Charges
 
+    ! (eq.29)
     do A = 1,nAt
       do l = 1,2
-        qS_new(A,l) = shell(2*(A-1)+l,3)
-        do nu = 1,nBas
-          qS_new(A,l) = qS_new(A,l) - S(2*(A-1)+l,nu)*P(2*(A-1)+l,nu)
+        qS(A,l) = shell(2*(A-1)+l,3)
+
+        ish_A = 0
+        if (l.eq.2.and.atype(A).ne.1) ish_A = 2
+
+        do mu = int(shell(2*(A-1)+l,4)),int(shell(2*(A-1)+l,4))+ish_A
+          do nu = 1,nBas
+
+            qS(A,l) = qS(A,l) - S(mu,nu)*P(mu,nu)
+
+          end do
         end do
+
       end do
     end do
 
-    ! Compute Atomic Charges (eq.20)
-
+    ! (eq.20)
     do A = 1,nAt
-      qA(A) = sum(qS_new(A,:))
+      qA(A) = sum(qS(A,:))
     end do
 
-    ! Update F
+
+    ! Dump Charges
+
+    DqS = abs(maxval(qS - qS_old))
+    DqA = abs(maxval(qA - qA_old))
+
+    if (DqS.ge.qthresh.and.nscf.gt.1) then
+      qS = qS_old + 0.4d0*DqS
+      qA = qA_old + 0.4d0*DqA
+    end if
+
+    ! Compute Fock Matrix
 
     F(:,:) = H0(:,:)
 
-    do A = 1,nAt-1
+    do A = 1,nAt
       do l = 1,2
 
-        shift_sh_A = sum(CKM(A,:,l,:)*qS_new(:,:))
+        shift_sh_A = sum(ckm(A,:,l,:)*qS(:,:))
         shift_at_A = Gamm(A)*qA(A)*qA(A)
-        do B = A+1,nAt
+
+        do B = 1,nAt
           do lp = 1,2
-            shift_sh_B = sum(CKM(B,:,lp,:)*qS_new(:,:))
+
+            shift_sh_B = sum(ckm(B,:,lp,:)*qS(:,:))
             shift_at_B = Gamm(B)*qA(B)*qA(B)
-    
-            mu = 2*(A-1) + l
-            nu = 2*(B-1) + lp
-  
-            F(mu,nu) = F(mu,nu) - 0.5d0*S(mu,nu)  &
-                       *(shift_sh_A + shift_sh_B + shift_at_A + shift_at_B)
-            F(nu,mu) = F(mu,nu)
+
+            ish_A = 0
+            ish_B = 0
+            if (l.eq.2.and.atype(A).ne.1) ish_A = 2
+            if (lp.eq.2.and.atype(B).ne.1) ish_B = 2
+
+            do mu = int(shell(2*(A-1)+l,4)),int(shell(2*(A-1)+l,4))+ish_A
+              do nu = int(shell(2*(B-1)+lp,4)),int(shell(2*(B-1)+lp,4))+ish_B
+
+                F(mu,nu) = F(mu,nu) - 0.5d0*S(mu,nu)  &
+                           *(shift_sh_A + shift_sh_B + shift_at_A + shift_at_B)
+              end do
+            end do
+
           end do
         end do
 
@@ -135,6 +169,7 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
     ! Compute energies
 
+    ! (eq.37) 
     E1 = 0.d0
     do mu = 1,nBas
       do nu = 1,nBas
@@ -142,38 +177,36 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
       end do
     end do
 
+    ! (eq.19)
     E2 = 0.d0
-!    do
-!      do
-!        E2 = E2 +
-!      end do
-!    end do
-
-    E3 = 0.d0
     do A = 1,nAt
-      E3 = E3 + Gamm(A)*qA(A)
+      do B = 1,nAt
+        do l = 1,2
+          do lp = 1,2
+            E2 = E2 + CKM(A,B,l,lp)*qS(A,l)*qS(B,lp)
+          end do
+        end do
+      end do
     end do
 
-    ! Convergency Criterium
+    E2 = E2*0.5d0
 
-    DqS = abs(maxval(qS_new - qS_old))
-    DqA = abs(maxval(qA - qA_old))
-    
+    ! (eq.20)
+    E3 = 0.d0
+    do A = 1,nAt
+      E3 = E3 + Gamm(A)*qA(A)*qA(A)*qA(A)
+    end do
+
+    E3 = E3/3.d0
+
+    ! Convergency Criterium
+   
     conv = max(Dqs, DqA)
        
     ! New Charges
     
-    if (DqS.ge.qthresh) then
-      qS_old = qS_new + 0.4d0*DqS   ! dumped
-    else 
-      qS_old = qS_new               ! not dumped
-    end if
-    
-    if (DqA.ge.qthresh) then
-      qA_old = qA + 0.4d0*DqA       ! dumped
-    else
-      qA_old = qA                   ! not dumped
-    end if
+    qS_old = qS
+    qA_old = qA
 
     ! Dump results
 
@@ -210,6 +243,6 @@ subroutine SCF(nBas,nOcc,nAt,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   ! Deallocate variables
 
   deallocate(C, Cp, P, F, Fp)
-  deallocate(qS_old, qS_new, qA_old)
+  deallocate(qS_old, qS, qA_old)
 
 end subroutine SCF

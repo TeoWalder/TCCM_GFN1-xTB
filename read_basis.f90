@@ -17,7 +17,7 @@ subroutine read_basis(nat,nshell,nbasis,H0,S,eta,shell)
 
   ! Shells and electronegativity
   do i = 1,nshell
-    read(5,*) dummy, shell(i,1), cdummy, shell(i,2:5)
+    read(5,*) dummy, shell(i,1), cdummy, shell(i,2), shell(i,3), shell(i,4), shell(i,5)
   end do
 
   ! Shell Matrix structure:
