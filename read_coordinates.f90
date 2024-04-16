@@ -1,12 +1,14 @@
-subroutine read_coordinates(nat,ang_bohr,atype,pos,symbol)
+subroutine read_coordinates(nat,ang_bohr,atype,pos,symbol,Gamm,G)
 
   implicit none
 
   integer, intent(in) :: nat
   real(8), intent(in) :: ang_bohr
+  real(8), intent(in) :: Gamm(4)
 
   integer  , intent(out) :: atype(nat)
   real(8)  , intent(out) :: pos(nat,3)
+  real(8)  , intent(out) :: G(nat)
   character, intent(out) :: symbol(nat)
 
   integer :: i
@@ -35,12 +37,16 @@ subroutine read_coordinates(nat,ang_bohr,atype,pos,symbol)
   do i = 1,nat
     if (symbol(i).eq.'H') then 
       atype(i) = 1
+      G(i) = Gamm(1)
     else if (symbol(i).eq.'C') then
       atype(i) = 2
+      G(i) = Gamm(2)
     else if (symbol(i).eq.'N') then
       atype(i) = 3
+      G(i) = Gamm(3)
     else if (symbol(i).eq.'O') then
       atype(i) = 4
+      G(i) = Gamm(4)
     end if
   end do
 

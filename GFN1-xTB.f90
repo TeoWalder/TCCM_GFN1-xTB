@@ -17,6 +17,7 @@ program GFN1_xTB
   real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
   real(8)  , allocatable :: eta(:,:)
   real(8)  , allocatable :: CKM(:,:,:,:)
+  real(8)  , allocatable :: G(:)
   real(8)  , allocatable :: q(:)
 ! TECHNICAL VARIABLES
   integer :: i
@@ -44,7 +45,7 @@ program GFN1_xTB
   ! Read number of atoms
   read(5,*) nAt
 
-  allocate(pos(nAt,3), symbol(nat), dist(nat,nat), atype(nat), q(nat))
+  allocate(pos(nAt,3), symbol(nat), dist(nat,nat), atype(nat), q(nat), G(nat))
 
   read(5,*)
   read(5,*)
@@ -55,7 +56,7 @@ program GFN1_xTB
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
   ! Read CoordinAtes
-  call read_coordinAtes(nat, ang_bohr, atype, pos, symbol)
+  call read_coordinAtes(nat, ang_bohr, atype, pos, symbol, Gamm, G)
 
   ! Compute Distances
   call distances(nAt, pos, dist)
@@ -112,7 +113,7 @@ program GFN1_xTB
   call CK_matrix(nAt, dist, eta, ckm)
 
   ! Self-Consistent Field
-  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, Gamm, E1, E2, E3, q)
+  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, G, E1, E2, E3, q)
 
 !--------- TOTAL ENERGY & CHARGES ---------------------------------------------!
 
@@ -143,7 +144,7 @@ program GFN1_xTB
   close(10)
   ! Deallocate variables
   deallocate(pos, symbol, dist, atype)
-  deallocate(shell, eta, q)
+  deallocate(shell, eta, q, G)
   deallocate(H0, S, X, CKM)
 
   stop

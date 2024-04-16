@@ -121,15 +121,16 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
       qA(A) = sum(qS(A,:))
     end do
 
-
     ! Dump Charges
 
     DqS = abs(maxval(qS - qS_old))
     DqA = abs(maxval(qA - qA_old))
 
-    if (DqS.ge.qthresh.and.nscf.gt.1) then
-      qS = qS_old + 0.4d0*DqS
-      qA = qA_old + 0.4d0*DqA
+    if (nSCF.gt.1) then
+      if (DqS.ge.qthresh.or.DqA.ge.qthresh) then
+        qS = qS_old + 0.4d0*DqS
+        qA = qA_old + 0.4d0*DqA
+      end if
     end if
 
     ! Compute Fock Matrix
@@ -142,7 +143,7 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
         shift_sh_A = sum(ckm(A,:,l,:)*qS(:,:))
         shift_at_A = Gamm(A)*qA(A)*qA(A)
 
-        do B = 1,nAt
+        do B = A,nAt
           do lp = 1,2
 
             shift_sh_B = sum(ckm(B,:,lp,:)*qS(:,:))
@@ -188,7 +189,6 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
         end do
       end do
     end do
-
     E2 = E2*0.5d0
 
     ! (eq.20)
@@ -196,7 +196,6 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
     do A = 1,nAt
       E3 = E3 + Gamm(A)*qA(A)*qA(A)*qA(A)
     end do
-
     E3 = E3/3.d0
 
     ! Convergency Criterium
@@ -212,6 +211,8 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
 
     write(*,'(1x,a1,1x,i3,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x)') &
             '|',nSCF,'|',DqS,'|',DqA,'|',E1,'|',E2,'|',E3,'|'
+
+stop ! debug
  
   enddo
   write(*,*)'------------------------------------------------------------------------'

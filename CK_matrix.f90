@@ -17,7 +17,7 @@ subroutine CK_matrix(nAt,dist,eta,ckm)
   inv_etaAB = 0.d0
 
   do A = 1,nAt
-    do B = A,nAt
+    do B = 1,nAt
       inv_etaAB(A,B,1,1) = 1.d0/eta(A,1) + 1.d0/eta(B,1)
       inv_etaAB(A,B,1,2) = 1.d0/eta(A,1) + 1.d0/eta(B,2)
       inv_etaAB(A,B,2,1) = 1.d0/eta(A,2) + 1.d0/eta(B,1)
@@ -33,7 +33,7 @@ subroutine CK_matrix(nAt,dist,eta,ckm)
   ckm = 0.d0
 
   do A = 1,nAt 
-    do B = A,nAt
+    do B = 1,nAt
       ckm(A,B,1,1) = dist(A,B)*dist(A,B) + inv_etaAB(A,B,1,1)*inv_etaAB(A,B,1,1)
       ckm(A,B,1,2) = dist(A,B)*dist(A,B) + inv_etaAB(A,B,1,2)*inv_etaAB(A,B,1,2)
       ckm(A,B,2,1) = dist(A,B)*dist(A,B) + inv_etaAB(A,B,2,1)*inv_etaAB(A,B,2,1)
