@@ -3,13 +3,9 @@ READ = read_parameters.f90 read_coordinates.f90 read_basis.f90
 LAPACK = lapack_routines.f90 -llapack -lblas
 
 GF = gfortran
-FLAGS = -g -w -Wall
 
 all:
 	${GF} GFN1-xTB.f90 -o xTB.x ${SUBROUTINES} ${READ} ${LAPACK}
-
-debug:
-	${GF} ${FLAGS} GFN1-xTB.f90 -o xTB.x ${SUBROUTINES} ${READ} ${LAPACK}
 
 clean:
 	rm -f xTB.x
