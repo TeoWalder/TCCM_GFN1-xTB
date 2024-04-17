@@ -16,6 +16,7 @@ subroutine distances(n,pos,dist)
       dist(i,j) = dsqrt((pos(i,1) - pos(j,1))*(pos(i,1) - pos(j,1)) + &
                         (pos(i,2) - pos(j,2))*(pos(i,2) - pos(j,2)) + &
                         (pos(i,3) - pos(j,3))*(pos(i,3) - pos(j,3)))
+      dist(j,i) = dist(i,j)
     end do
   end do
 

@@ -13,7 +13,7 @@ program GFN1_xTB
   character, allocatable :: symbol(:)
   real(8)  , allocatable :: shell(:,:)
   real(8)  , allocatable :: pos(:,:), dist(:,:)
-  real(8)                :: Erep, E0, E1, E2, E3, Etot
+  real(8)                :: Erep, E0, Eel, Etot
   real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
   real(8)  , allocatable :: eta(:,:)
   real(8)  , allocatable :: CKM(:,:,:,:)
@@ -113,24 +113,21 @@ program GFN1_xTB
   call CK_matrix(nAt, dist, eta, ckm)
 
   ! Self-Consistent Field
-  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, G, E1, E2, E3, q)
+  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, G, Eel, q)
 
 !--------- TOTAL ENERGY & CHARGES ---------------------------------------------!
 
-  Etot = E0 + E1 + E2 + E3
+  Etot = E0 + Eel
 
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
   write(*,'(a74)') '                               RESULTS                                     '
   write(*,'(a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(x,a25,f15.10,2x,a7)') 'Repulsion Energy:        ', Erep           , 'Hartree'
-  write(*,'(x,a25,a15,2x,a7)')    'Dispersion Energy:       ', '--'           , 'Hartree'
-  write(*,'(x,a25,f15.10,2x,a7)') '1st Order Energy:        ', E1             , 'Hartree'
-  write(*,'(x,a25,f15.10,2x,a7)') '2nd Order Energy:        ', E2             , 'Hartree'
-  write(*,'(x,a25,f15.10,2x,a7)') '3rd Order Energy:        ', E3             , 'Hartree'
-  write(*,'(x,a25,f15.10,2x,a7)') 'Total energy:            ', Etot           , 'Hartree'
-  write(*,'(x,a25,f15.10,2x,a2)') 'Total energy:            ', Etot*ev_hartree, 'eV'
+  write(*,'(x,a20,f15.10,2x,a7)') 'Repulsion Energy:   ', Erep           , 'Hartree'
+  write(*,'(x,a20,a15,2x,a7)')    'Dispersion Energy:  ', '--'           , 'Hartree'
+  write(*,'(x,a20,f15.10,2x,a7)') 'Electronic Energy:  ', Eel            , 'Hartree'
+  write(*,'(x,a20,f15.10,2x,a7)') 'Total energy:       ', Etot           , 'Hartree'
   write(*,*)
   write(*,'(x,a25)') 'Atomic Charges:          '
   write(*,*)

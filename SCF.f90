@@ -1,4 +1,4 @@
-subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
+subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
 
   implicit none
 
@@ -15,14 +15,15 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   real(8), intent(in)  :: CKM(nAt,nAt,2,2)
   real(8), intent(in)  :: Gamm(nAt)
   ! Output variables
-  real(8), intent(out) :: E1, E2, E3
+  real(8), intent(out) :: Eel
   real(8), intent(out) :: qA(nAt)
   ! Local variables
   integer, parameter   :: maxSCF = 60
-  real(8), parameter   :: thresh = 1.d-5
+  real(8), parameter   :: thresh = 1.d-7
   real(8), parameter   :: qthresh = 1.d-3
   real(8)              :: Conv
   real(8)              :: DqA, DqS
+  real(8)              :: Eel_old, E1, E2, E3
   real(8), allocatable :: C(:,:)
   real(8), allocatable :: Cp(:,:)
   real(8), allocatable :: P(:,:)
@@ -54,17 +55,18 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
   F(:,:) = H0(:,:)
   qS_old = 0.d0
   qA_old = 0.d0
+  Eel_old = 0.d0
 
   ! Initialization
 
   nSCF = 0
-  Conv = 1d0
+  Conv = 1.d0
 
 !------ SCF loop ------------------------------------------!
 
-  write(*,'(1x,a1,1x,a3,1x,a1,1x,a10,1x,a1,1x,a10,1X,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x)') &
-            '|','#','|','Dq Shell','|','Dq Atom','|','E(1)','|','E(2)','|','E(3)','|'
-  write(*,*)'------------------------------------------------------------------------'
+  write(*,'(1x,a1,1x,a3,1x,a1,1x,a13,1X,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x)') &
+            '|','#','|','Elec. Energy','|','E(1)','|','E(2)','|','E(3)','|'
+  write(*,*)'------------------------------------------------------------'
    
   do while(conv.gt.thresh.and.nSCF.lt.maxSCF)
 
@@ -105,7 +107,7 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
         ish_A = 0
         if (l.eq.2.and.atype(A).ne.1) ish_A = 2
 
-        do mu = int(shell(2*(A-1)+l,4)),int(shell(2*(A-1)+l,4))+ish_A
+        do mu = int(shell(2*(A-1)+l,4)), int(shell(2*(A-1)+l,4)) + ish_A
           do nu = 1,nBas
 
             qS(A,l) = qS(A,l) - S(mu,nu)*P(mu,nu)
@@ -119,53 +121,6 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
     ! (eq.20)
     do A = 1,nAt
       qA(A) = sum(qS(A,:))
-    end do
-
-    ! Dump Charges
-
-    DqS = abs(maxval(qS - qS_old))
-    DqA = abs(maxval(qA - qA_old))
-
-    if (nSCF.gt.1) then
-      if (DqS.ge.qthresh.or.DqA.ge.qthresh) then
-        qS = qS_old + 0.4d0*DqS
-        qA = qA_old + 0.4d0*DqA
-      end if
-    end if
-
-    ! Compute Fock Matrix
-
-    F(:,:) = H0(:,:)
-
-    do A = 1,nAt
-      do l = 1,2
-
-        shift_sh_A = sum(ckm(A,:,l,:)*qS(:,:))
-        shift_at_A = Gamm(A)*qA(A)*qA(A)
-
-        do B = A,nAt
-          do lp = 1,2
-
-            shift_sh_B = sum(ckm(B,:,lp,:)*qS(:,:))
-            shift_at_B = Gamm(B)*qA(B)*qA(B)
-
-            ish_A = 0
-            ish_B = 0
-            if (l.eq.2.and.atype(A).ne.1) ish_A = 2
-            if (lp.eq.2.and.atype(B).ne.1) ish_B = 2
-
-            do mu = int(shell(2*(A-1)+l,4)),int(shell(2*(A-1)+l,4))+ish_A
-              do nu = int(shell(2*(B-1)+lp,4)),int(shell(2*(B-1)+lp,4))+ish_B
-
-                F(mu,nu) = F(mu,nu) - 0.5d0*S(mu,nu)  &
-                           *(shift_sh_A + shift_sh_B + shift_at_A + shift_at_B)
-              end do
-            end do
-
-          end do
-        end do
-
-      end do
     end do
 
     ! Compute energies
@@ -198,24 +153,72 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,E1,E2,E3,qA)
     end do
     E3 = E3/3.d0
 
+    ! Total Electronic Energy
+    Eel = E1 + E2 + E3
+
+    ! Damp Charges
+
+    DqS = abs(maxval(qS - qS_old))
+    DqA = abs(maxval(qA - qA_old))
+
+    if (DqS.ge.qthresh.or.DqA.ge.qthresh) then
+      qS = qS_old + 0.4d0*(qS - qS_old)
+      qA = qA_old + 0.4d0*(qA - qA_old)
+    end if
+
+    ! Compute Fock Matrix
+
+    F(:,:) = H0(:,:)
+
+    do A = 1,nAt
+      shift_at_A = Gamm(A)*qA(A)*qA(A)
+      do l = 1,2
+
+        shift_sh_A = sum(ckm(A,:,l,:)*qS(:,:))
+
+        do B = 1,nAt
+          shift_at_B = Gamm(B)*qA(B)*qA(B)
+          do lp = 1,2
+
+            shift_sh_B = sum(ckm(B,:,lp,:)*qS(:,:))
+
+            ish_A = 0
+            ish_B = 0
+            if (l.eq.2.and.atype(A).ne.1) ish_A = 2
+            if (lp.eq.2.and.atype(B).ne.1) ish_B = 2
+
+            do mu = int(shell(2*(A-1)+l,4)), int(shell(2*(A-1)+l,4)) + ish_A
+              do nu = int(shell(2*(B-1)+lp,4)), int(shell(2*(B-1)+lp,4)) + ish_B
+
+                F(mu,nu) = F(mu,nu) - 0.5d0*S(mu,nu)  &
+                           *(shift_sh_A + shift_sh_B + shift_at_A + shift_at_B)
+              end do
+            end do
+
+          end do
+        end do
+
+      end do
+    end do
+
     ! Convergency Criterium
    
-    conv = max(Dqs, DqA)
+    conv = abs(Eel - Eel_old)
        
     ! New Charges
     
     qS_old = qS
     qA_old = qA
+    Eel_old = Eel
 
     ! Dump results
 
-    write(*,'(1x,a1,1x,i3,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x)') &
-            '|',nSCF,'|',DqS,'|',DqA,'|',E1,'|',E2,'|',E3,'|'
+    write(*,'(1x,a1,1x,i3,1x,a1,1x,f13.8,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x)') &
+            '|',nSCF,'|',Eel,'|',E1,'|',E2,'|',E3,'|'
+!stop
 
-stop ! debug
- 
   enddo
-  write(*,*)'------------------------------------------------------------------------'
+  write(*,*)'------------------------------------------------------------'
 
 !------ End of SCF loop -----------------------------------!
 
@@ -234,9 +237,11 @@ stop ! debug
   else
 
     write(*,*)
-    write(*,*)'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-    write(*,*)'                    SCF Converged                   '
-    write(*,*)'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    write(*,*)'                      ! SCF CONVERGED !                   '
+    write(*,*)
+    write(*,'(x,a20,f15.10,2x,a7)')'1st order Energy:   ', E1, 'Hartree'
+    write(*,'(x,a20,f15.10,2x,a7)')'2nd order Energy:   ', E2, 'Hartree'
+    write(*,'(x,a20,f15.10,2x,a7)')'3rd order Energy:   ', E3, 'Hartree'
     write(*,*)
 
   end if
