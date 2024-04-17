@@ -1,4 +1,4 @@
-subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
+subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA,ev_hartree)
 
   implicit none
 
@@ -8,6 +8,7 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
   integer, intent(in)  :: nAt
   integer, intent(in)  :: nSh
   integer, intent(in)  :: atype(nAt)
+  real(8), intent(in)  :: ev_hartree
   real(8), intent(in)  :: S(nBas,nBas)
   real(8), intent(in)  :: H0(nBas,nBas)
   real(8), intent(in)  :: X(nBas,nBas)
@@ -20,7 +21,7 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
   ! Local variables
   integer, parameter   :: maxSCF = 60
   real(8), parameter   :: thresh = 1.d-7
-  real(8), parameter   :: qthresh = 1.d-3
+  real(8), parameter   :: dump_thresh = 1.d-3
   real(8)              :: Conv
   real(8)              :: DqA, DqS
   real(8)              :: Eel_old, E1, E2, E3
@@ -28,26 +29,26 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
   real(8), allocatable :: Cp(:,:)
   real(8), allocatable :: P(:,:)
   real(8), allocatable :: F(:,:), Fp(:,:)
-  real(8)              :: e(nBas)
+  real(8), allocatable :: e(:)
   real(8), allocatable :: qS_old(:,:), qS(:,:)
   real(8), allocatable :: qA_old(:)
   real(8)              :: shift_at_A, shift_at_B
   real(8)              :: shift_sh_A, shift_sh_B
   ! Counters
   integer              :: nSCF
-  integer              :: mu, nu, si, la
+  integer              :: mu, nu, si
   integer              :: ish_A, ish_B
   integer              :: A, B, Ca, l, lp, lpp
 
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(a74)') '                         SELF-CONSISTENT FIELD                             '
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '                         SELF-CONSISTENT FIELD                             '
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
 
   ! Memory allocation
 
-  allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas))
+  allocate(C(nBas,nBas), Cp(nBas,nBas), P(nBas,nBas), F(nBas,nBas), Fp(nBas,nBas), e(nBas))
   allocate(qS_old(nAt,2), qS(nAt,2), qA_old(nAt))
 
   ! Initial Guess
@@ -64,10 +65,10 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
 
 !------ SCF loop ------------------------------------------!
 
-  write(*,'(1x,a1,1x,a3,1x,a1,1x,a13,1X,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x,a10,1x,a1,1x)') &
-            '|','#','|','Elec. Energy','|','E(1)','|','E(2)','|','E(3)','|'
-  write(*,*)'------------------------------------------------------------'
-   
+  write(*,'(x,a1,x,a3,x,a1,x,a13,x,a1,x,a10,x,a1,x,a10,x,a1,x,a10,x,a1,x,a10,x,a1,x,a10,x,a1,x)') &
+             '|','#','|','Elec. Energy','|','E(1)','|','E(2)','|','E(3)','|','DE','|'
+  write(*,*) '---------------------------------------------------------------------------'   
+
   do while(conv.gt.thresh.and.nSCF.lt.maxSCF)
 
     ! Increment 
@@ -161,7 +162,7 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
     DqS = abs(maxval(qS - qS_old))
     DqA = abs(maxval(qA - qA_old))
 
-    if (DqS.ge.qthresh.or.DqA.ge.qthresh) then
+    if (DqS.ge.dump_thresh.or.DqA.ge.dump_thresh) then
       qS = qS_old + 0.4d0*(qS - qS_old)
       qA = qA_old + 0.4d0*(qA - qA_old)
     end if
@@ -211,44 +212,53 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA)
     qA_old = qA
     Eel_old = Eel
 
-    ! Dump results
+    ! Write cycle results
 
-    write(*,'(1x,a1,1x,i3,1x,a1,1x,f13.8,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x,f10.6,1x,a1,1x)') &
-            '|',nSCF,'|',Eel,'|',E1,'|',E2,'|',E3,'|'
-!stop
+    write(*,'(x,a1,x,i3,x,a1,x,f13.8,x,a1,x,f10.6,x,a1,x,f10.6,x,a1,x,f10.6,x,a1,x,f10.8,x,a1,x)') &
+            '|',nSCF,'|',Eel,'|',E1,'|',E2,'|',E3,'|',conv,'|'
 
   enddo
-  write(*,*)'------------------------------------------------------------'
+  write(*,*) '---------------------------------------------------------------------------'
 
-!------ End of SCF loop -----------------------------------!
+!------ End of SCF loop -------------------------------------------------------!
 
-  ! Did it actually converge?
+  ! Did it converge?
 
-  if(nSCF.eq.maxSCF) then
+  if(nSCF.eq.maxSCF) then ! No :(
 
     write(*,*)
-    write(*,*)'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-    write(*,*)'                 Convergence failed                 '
-    write(*,*)'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    write(*,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    write(*,*) '                 Convergence failed                 '
+    write(*,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
     write(*,*)
 
     stop
 
-  else
+  else ! Yes, write SCF results
 
     write(*,*)
-    write(*,*)'                      ! SCF CONVERGED !                   '
+    write(*,'(x,a20,x,i2,x,a6)') '### SCF CONVERGED in', nSCF, 'steps!'
     write(*,*)
-    write(*,'(x,a20,f15.10,2x,a7)')'1st order Energy:   ', E1, 'Hartree'
-    write(*,'(x,a20,f15.10,2x,a7)')'2nd order Energy:   ', E2, 'Hartree'
-    write(*,'(x,a20,f15.10,2x,a7)')'3rd order Energy:   ', E3, 'Hartree'
+
+    write(*,'(x,a17)') 'Orbital Energies:'
+    write(*,'(x,a3,x,a10,2x,a10)') '#', 'Hartree','eV'
+    do mu = 1,nBas
+      write(*,'(x,i3,x,f10.6,2x,f10.6)') mu, e(mu), e(mu)*ev_hartree
+    end do
+    write(*,*)
+
+    write(*,'(x,a20,f10.6,2x,a7)') '1st order Energy:   ', E1, 'Hartree'
+    write(*,'(x,a20,f10.6,2x,a7)') '2nd order Energy:   ', E2, 'Hartree'
+    write(*,'(x,a20,f10.6,2x,a7)') '3rd order Energy:   ', E3, 'Hartree'
+    write(*,*)
+    write(*,'(x,a20,f10.6,2x,a7)') 'Electronic Energy:  ', Eel, 'Hartree'
     write(*,*)
 
   end if
 
   ! Deallocate variables
 
-  deallocate(C, Cp, P, F, Fp)
+  deallocate(C, Cp, P, F, Fp, e)
   deallocate(qS_old, qS, qA_old)
 
 end subroutine SCF

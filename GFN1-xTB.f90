@@ -13,7 +13,7 @@ program GFN1_xTB
   character, allocatable :: symbol(:)
   real(8)  , allocatable :: shell(:,:)
   real(8)  , allocatable :: pos(:,:), dist(:,:)
-  real(8)                :: Erep, E0, Eel, Etot
+  real(8)                :: Erep, E0, Eel, Etot!, Edisp
   real(8)  , allocatable :: H0(:,:), S(:,:), X(:,:)
   real(8)  , allocatable :: eta(:,:)
   real(8)  , allocatable :: CKM(:,:,:,:)
@@ -24,11 +24,11 @@ program GFN1_xTB
 
 !---------- HELLO WORLD -------------------------------------------------------!
 
-  write(*,*) ' ______________________________________ '
-  write(*,*) '|                                      |' 
-  write(*,*) '|      Online Programming Project      |'
-  write(*,*) '|      GFN1-xTB Semiempirical DFT      |'
-  write(*,*) '|______________________________________|'
+  write(*,*) '                  ______________________________________ '
+  write(*,*) '                 |                                      |' 
+  write(*,*) '                 |      Online Programming Project      |'
+  write(*,*) '                 |      GFN1-xTB Semiempirical DFT      |'
+  write(*,*) '                 |______________________________________|'
   write(*,*)
 
 !---------- INITIALIZATION ----------------------------------------------------!
@@ -50,10 +50,10 @@ program GFN1_xTB
   read(5,*)
   read(5,*)
 
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(a74)') '                          MOLECULAR STRUCTURE                              '
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '                          MOLECULAR STRUCTURE                              '
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
   ! Read CoordinAtes
   call read_coordinAtes(nat, ang_bohr, atype, pos, symbol, Gamm, G)
@@ -87,10 +87,10 @@ program GFN1_xTB
   call read_basis(nAt, nSh, nBas, H0, S, eta, shell)
 
   ! Print Basis Set
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(a74)') '                              BASIS SET                                    '
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '                              BASIS SET                                    '
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
   write(*,'(x,a27,i3)') 'Total number of electrons: ', nel
   write(*,'(x,a27,i3)') 'Occupied orbitals:         ', nOcc
@@ -113,26 +113,26 @@ program GFN1_xTB
   call CK_matrix(nAt, dist, eta, ckm)
 
   ! Self-Consistent Field
-  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, G, Eel, q)
+  call SCF(nBas, nOcc, nAt, nSh, atype, S, H0, X, shell, CKM, G, Eel, q, ev_hartree)
 
 !--------- TOTAL ENERGY & CHARGES ---------------------------------------------!
 
   Etot = E0 + Eel
 
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(a74)') '                               RESULTS                                     '
-  write(*,'(a74)') '___________________________________________________________________________'
+  write(*,'(x,a74)') '                               RESULTS                                     '
+  write(*,'(x,a74)') '___________________________________________________________________________'
   write(*,*)
-  write(*,'(x,a20,f15.10,2x,a7)') 'Repulsion Energy:   ', Erep           , 'Hartree'
-  write(*,'(x,a20,a15,2x,a7)')    'Dispersion Energy:  ', '--'           , 'Hartree'
-  write(*,'(x,a20,f15.10,2x,a7)') 'Electronic Energy:  ', Eel            , 'Hartree'
-  write(*,'(x,a20,f15.10,2x,a7)') 'Total energy:       ', Etot           , 'Hartree'
+  write(*,'(x,a20,f10.6,2x,a7)') 'Repulsion  Energy:  ', Erep, 'Hartree'
+  write(*,'(x,a20,a10,2x,a7)')   'Dispersion Energy:  ', '--', 'Hartree'
+  write(*,'(x,a20,f10.6,2x,a7)') 'Electronic Energy:  ', Eel , 'Hartree'
+  write(*,'(x,a20,f10.6,2x,a7)') 'Total      Energy:  ', Etot, 'Hartree'
   write(*,*)
-  write(*,'(x,a25)') 'Atomic Charges:          '
+  write(*,'(x,a25)') 'Mulliken Charges:        '
   write(*,*)
   do i = 1,nAt
-    write(*,'(1x,a1,f16.10)') symbol(i), q(i)
+    write(*,'(x,a1,f10.6)') symbol(i), q(i)
   end do
 
 !---------- END PROGRAM -------------------------------------------------------!
