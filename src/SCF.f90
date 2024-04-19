@@ -159,13 +159,15 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA,ev_hartree)
 
     ! Damp Charges
 
-    DqS = abs(maxval(qS - qS_old))
-    DqA = abs(maxval(qA - qA_old))
+    DqS = maxval(abs(qS - qS_old))
+    DqA = maxval(abs(qA - qA_old))
 
     if (DqS.ge.dump_thresh.or.DqA.ge.dump_thresh) then
       qS = qS_old + 0.4d0*(qS - qS_old)
       qA = qA_old + 0.4d0*(qA - qA_old)
     end if
+
+    print*, qA(:)
 
     ! Compute Fock Matrix
 
