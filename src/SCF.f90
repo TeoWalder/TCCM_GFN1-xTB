@@ -167,8 +167,6 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA,ev_hartree)
       qA = qA_old + 0.4d0*(qA - qA_old)
     end if
 
-    print*, qA(:)
-
     ! Compute Fock Matrix
 
     F(:,:) = H0(:,:)
