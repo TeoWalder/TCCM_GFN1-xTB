@@ -35,16 +35,16 @@ subroutine read_coordinates(nat,ang_bohr,atype,pos,symbol,Gamm,G)
 
   ! Associate symbols to numbers
   do i = 1,nat
-    if (symbol(i).eq.'H') then 
+    if (symbol(i).eq.'H'.or.symbol(i).eq.'h') then 
       atype(i) = 1
       G(i) = Gamm(1)
-    else if (symbol(i).eq.'C') then
+    else if (symbol(i).eq.'C'.or.symbol(i).eq.'c') then
       atype(i) = 2
       G(i) = Gamm(2)
-    else if (symbol(i).eq.'N') then
+    else if (symbol(i).eq.'N'.or.symbol(i).eq.'n') then
       atype(i) = 3
       G(i) = Gamm(3)
-    else if (symbol(i).eq.'O') then
+    else if (symbol(i).eq.'O'.or.symbol(i).eq.'o') then
       atype(i) = 4
       G(i) = Gamm(4)
     end if

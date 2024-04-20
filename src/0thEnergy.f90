@@ -17,7 +17,7 @@ subroutine repulsion_energy(n,atype,dist,Z,alpha,kf,E)
     do j = i+1,n
       A = atype(i)
       B = atype(j)
-      E = E + Z(A)*Z(B)/dist(i,j)*dexp(-dsqrt(alpha(A)*alpha(B))*dist(i,j)**kf)
+      E = E + Z(A)*Z(B)/dist(i,j)*exp(-sqrt(alpha(A)*alpha(B))*dist(i,j)**kf)
     end do
   end do
 

@@ -13,9 +13,9 @@ subroutine distances(n,pos,dist)
 
   do i = 1,n-1
     do j = i+1,n
-      dist(i,j) = dsqrt((pos(i,1) - pos(j,1))*(pos(i,1) - pos(j,1)) + &
-                        (pos(i,2) - pos(j,2))*(pos(i,2) - pos(j,2)) + &
-                        (pos(i,3) - pos(j,3))*(pos(i,3) - pos(j,3)))
+      dist(i,j) = sqrt((pos(i,1) - pos(j,1))**2 + &
+                       (pos(i,2) - pos(j,2))**2 + &
+                       (pos(i,3) - pos(j,3))**2)
       dist(j,i) = dist(i,j)
     end do
   end do

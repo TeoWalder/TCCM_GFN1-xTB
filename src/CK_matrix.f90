@@ -39,7 +39,7 @@ subroutine CK_matrix(nAt,dist,eta,ckm)
       ckm(A,B,2,1) = dist(A,B)*dist(A,B) + inv_etaAB(A,B,2,1)*inv_etaAB(A,B,2,1)
       ckm(A,B,2,2) = dist(A,B)*dist(A,B) + inv_etaAB(A,B,2,2)*inv_etaAB(A,B,2,2)
 
-      ckm(A,B,:,:) = 1.d0/dsqrt(ckm(A,B,:,:))
+      ckm(A,B,:,:) = 1.d0/sqrt(ckm(A,B,:,:))
     end do
   end do
 
