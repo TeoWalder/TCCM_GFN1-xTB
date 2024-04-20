@@ -89,9 +89,9 @@ subroutine SCF(nBas,nOcc,nAt,nSh,atype,S,H0,X,shell,CKM,Gamm,Eel,qA,ev_hartree)
 
     ! Cmpute Density Matrix
 
+    P(:,:) = 0.d0
     do mu = 1,nBas
-      do nu = 1,nBas
-        P(mu,nu) = 0.d0
+      do nu = 1,nBas 
         do si = 1,nOcc
           P(mu,nu) = P(mu,nu) + 2.d0*C(mu,si)*C(nu,si)
         end do

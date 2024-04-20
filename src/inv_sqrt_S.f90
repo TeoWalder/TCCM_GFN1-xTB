@@ -30,9 +30,9 @@ subroutine inv_sqrt_S(nBas,S,X)
 
   ! transform back
 
+  X(:,:) = 0.d0
   do i = 1,nBas
     do j = 1,nBas
-      X(i,j) = 0.d0
       do k = 1,nBas
         X(i,j) = X(i,j) + U(i,k)*e(k)*U(j,k)
       end do
